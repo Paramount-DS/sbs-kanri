@@ -22,6 +22,7 @@
     </div>
     <div class="cs-header-actions">
       <a href="cs-list.html" class="btn-cs-list">📊 CS一覧</a>
+      <button class="btn-cs-import" onclick="openCsImportModal()">📥 JSON取込</button>
       <button class="btn-add-cs" onclick="openCsAddModal()">＋ CS案件登録</button>
       <a href="index.html" class="btn-back-project">← 案件管理</a>
     </div>
@@ -250,6 +251,53 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeCsDeleteModal()">キャンセル</button>
       <button class="btn btn-delete" onclick="confirmCsDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON取込モーダル -->
+<div id="csImportModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px;">
+    <div class="modal-header">
+      <h2>📥 JSON一括取込</h2>
+      <button class="btn-modal-close" onclick="closeCsImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#e8f0fc;border:1px solid #c5d8f5;border-radius:8px;padding:14px;font-size:13px;color:#0f3d82;margin-bottom:16px;line-height:1.8;">
+        <strong>取込について：</strong><br>
+        ・全国共通のCSコレクション（cs_projects）に登録されます<br>
+        ・JSONは配列形式（[{...},{...}]）に対応<br>
+        ・stTerminal → ステーション端末として取込みます
+      </div>
+      <div class="form-group">
+        <label class="form-label">JSONファイルを選択（.json / .txt）</label>
+        <input type="file" id="csImportFileInput" accept=".json,.txt" class="form-input" style="padding:8px;" onchange="previewCsImport(this)"/>
+      </div>
+      <div id="csImportPreview" style="display:none;margin-top:12px;">
+        <div style="font-size:13px;font-weight:600;color:#1e2330;margin-bottom:8px;">
+          取込予定データ：<span id="csImportCount" style="font-size:15px;color:#1a5cb8;">0</span> 件
+        </div>
+        <div style="max-height:260px;overflow-y:auto;border:1px solid #e2e6ed;border-radius:6px;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#f8f9fb;">
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">病院名</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">メイン担当</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">稼働予定日</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">許可病床数</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">新規/既存</th>
+              </tr>
+            </thead>
+            <tbody id="csImportPreviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="csImportNoData" style="display:none;text-align:center;padding:24px;color:#9aa5b4;font-size:13px;">取込可能なデータが見つかりませんでした</div>
+      <div id="csImportError" style="color:#c0392b;font-size:12px;margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCsImportModal()">キャンセル</button>
+      <button class="btn btn-primary" id="csImportExecuteBtn" onclick="executeCsImport()" disabled>取込実行</button>
     </div>
   </div>
 </div>

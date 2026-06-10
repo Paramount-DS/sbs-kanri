@@ -492,7 +492,7 @@ function initCs() {
   }
 
   // Firestore
-  db.collection("projects")
+  db.collection("cs_projects")
     .where("type", "==", "cs")
     .onSnapshot(snapshot => {
       allCsProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -618,12 +618,12 @@ async function saveCsProject(e) {
   if (!data.hospitalName) { showToast("病院名を入力してください", "error"); return; }
   try {
     if (id) {
-      await db.collection("projects").doc(id).update(data);
+      await db.collection("cs_projects").doc(id).update(data);
       showToast("CS案件を更新しました");
     } else {
       data.visits    = [];
       data.createdAt = new Date().toISOString();
-      await db.collection("projects").add(data);
+      await db.collection("cs_projects").add(data);
       showToast("CS案件を登録しました");
     }
     closeCsModal();
@@ -684,7 +684,7 @@ async function saveVisit(e) {
     updatedVisits.push(visit);
   }
   try {
-    await db.collection("projects").doc(projectId).update({ visits: updatedVisits });
+    await db.collection("cs_projects").doc(projectId).update({ visits: updatedVisits });
     showToast(editIndex >= 0 ? "訪問記録を更新しました" : "訪問記録を追加しました");
     closeVisitModal();
   } catch (err) {
@@ -700,7 +700,7 @@ async function deleteVisit(projectId, index) {
   if (index < 0 || index >= updatedVisits.length) return;
   updatedVisits.splice(index, 1);
   try {
-    await db.collection("projects").doc(projectId).update({ visits: updatedVisits });
+    await db.collection("cs_projects").doc(projectId).update({ visits: updatedVisits });
     showToast("訪問記録を削除しました");
   } catch (err) {
     console.error(err);
@@ -710,7 +710,7 @@ async function deleteVisit(projectId, index) {
 
 async function updateCsState(projectId, state) {
   try {
-    await db.collection("projects").doc(projectId).update({ state, taskStatus: state });
+    await db.collection("cs_projects").doc(projectId).update({ state, taskStatus: state });
     showToast("状態を更新しました");
   } catch (err) {
     console.error(err);
@@ -722,7 +722,7 @@ async function updateCsTaskPhase(projectId, phaseKey) {
   const phase = getCsPhase(phaseKey);
   const firstItem = phase.items[0]?.item || "";
   try {
-    await db.collection("projects").doc(projectId).update({
+    await db.collection("cs_projects").doc(projectId).update({
       csTaskPhase: phase.key,
       csTaskItem: firstItem,
     });
@@ -737,7 +737,7 @@ async function updateCsTaskItem(projectId, item) {
   const p = allCsProjects.find(x => x.id === projectId);
   const phase = p ? getCurrentCsPhase(p) : CS_PHASES[0];
   try {
-    await db.collection("projects").doc(projectId).update({ csTaskPhase: phase.key, csTaskItem: item });
+    await db.collection("cs_projects").doc(projectId).update({ csTaskPhase: phase.key, csTaskItem: item });
     showToast("CS項目を更新しました");
   } catch (err) {
     console.error(err);
@@ -822,7 +822,7 @@ async function confirmCsDelete() {
   }
   if (!pendingCsDeleteId) return;
   try {
-    await db.collection("projects").doc(pendingCsDeleteId).delete();
+    await db.collection("cs_projects").doc(pendingCsDeleteId).delete();
     showToast("CS案件を削除しました");
     closeCsDeleteModal();
   } catch (err) {
@@ -834,4 +834,107 @@ async function confirmCsDelete() {
 // =============================================
 // 初期化
 // =============================================
-document.addEventListener("DOMContentLoaded", initCs);
+// =============================================
+// JSON 取込
+// =============================================
+let csImportData = [];
+
+function openCsImportModal() {
+  csImportData = [];
+  document.getElementById("csImportFileInput").value = "";
+  document.getElementById("csImportPreview").style.display = "none";
+  document.getElementById("csImportNoData").style.display = "none";
+  document.getElementById("csImportError").textContent = "";
+  document.getElementById("csImportExecuteBtn").disabled = true;
+  document.getElementById("csImportModal").classList.add("open");
+}
+
+function closeCsImportModal() {
+  document.getElementById("csImportModal").classList.remove("open");
+  csImportData = [];
+}
+
+function previewCsImport(input) {
+  const file = input.files[0]; if (!file) return;
+  document.getElementById("csImportError").textContent = "";
+  document.getElementById("csImportPreview").style.display = "none";
+  document.getElementById("csImportNoData").style.display = "none";
+  document.getElementById("csImportExecuteBtn").disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      let json;
+      try { json = JSON.parse(e.target.result); }
+      catch(err) { document.getElementById("csImportError").textContent = "JSONの形式が正しくありません: " + err.message; return; }
+      if (!Array.isArray(json)) json = [json];
+
+      csImportData = json.map(item => ({
+        hospitalName:    String(item.hospitalName    || "").trim(),
+        goLiveDate:      String(item.goLiveDate      || "").trim(),
+        newOrExisting:   String(item.newOrExisting   || "").trim(),
+        smabe:           String(item.smabe           || "").trim(),
+        mainPerson:      String(item.mainPerson      || "").trim(),
+        subPerson:       String(item.subPerson       || "").trim(),
+        currentTask:     parseInt(item.currentTask)  || 0,
+        keieiShukai:     String(item.keieiShukai     || "").trim(),
+        kyokaBedNum:     String(item.kyokaBedNum     || "").trim(),
+        byokoKosei:      String(item.byokoKosei      || "").trim(),
+        donyuByoko:      String(item.donyuByoko      || "").trim(),
+        donyuBedNum:     String(item.donyuBedNum     || "").trim(),
+        bedsideTerminal: String(item.bedsideTerminal || "").trim(),
+        stationTerminal: String(item.stTerminal || item.stationTerminal || "").trim(),
+        nemiriScan:      String(item.nemiriScan      || "").trim(),
+        rishoCatch:      String(item.rishoCatch      || "").trim(),
+        wifiNav:         String(item.wifiNav         || "").trim(),
+        tabletPos:       String(item.tabletPos       || "").trim(),
+        electronicKarte: String(item.electronicKarte || "").trim(),
+        nurseCall:       String(item.nurseCall       || "").trim(),
+        shuhenRenkei:    String(item.shuhenRenkei    || "").trim(),
+        ankenGaiyou:     String(item.ankenGaiyou     || "").trim(),
+        scheduleStatus:  String(item.scheduleStatus  || "").trim(),
+        memo:            String(item.memo            || "").trim(),
+        createdAt:       new Date().toISOString(),
+      })).filter(d => d.hospitalName);
+
+      if (csImportData.length === 0) { document.getElementById("csImportNoData").style.display = "block"; return; }
+
+      document.getElementById("csImportCount").textContent = csImportData.length;
+      document.getElementById("csImportPreviewBody").innerHTML = csImportData.map(d => `
+        <tr style="border-bottom:1px solid #f0f2f5;">
+          <td style="padding:7px 10px;font-weight:600;">${escapeHtml(d.hospitalName)}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.mainPerson || "―")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.goLiveDate || "未設定")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.kyokaBedNum || "―")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.newOrExisting || "―")}</td>
+        </tr>`).join("");
+      document.getElementById("csImportPreview").style.display = "block";
+      document.getElementById("csImportExecuteBtn").disabled = false;
+    } catch(err) {
+      console.error(err);
+      document.getElementById("csImportError").textContent = "読み込みに失敗しました: " + err.message;
+    }
+  };
+  reader.readAsText(file, "utf-8");
+}
+
+async function executeCsImport() {
+  if (!csImportData.length) return;
+  const btn = document.getElementById("csImportExecuteBtn");
+  btn.disabled = true; btn.textContent = "取込中...";
+  let ok = 0, ng = 0;
+  for (const item of csImportData) {
+    try { await db.collection("cs_projects").add(item); ok++; }
+    catch(err) { console.error(err); ng++; }
+  }
+  btn.textContent = "取込実行";
+  closeCsImportModal();
+  showToast(ng === 0 ? `✅ ${ok}件取込みました` : `⚠️ ${ok}件成功、${ng}件失敗`, ng === 0 ? "success" : "error");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initCs();
+  document.getElementById("csImportModal").addEventListener("click", (e) => {
+    if (e.target.id === "csImportModal") closeCsImportModal();
+  });
+});
