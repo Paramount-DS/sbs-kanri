@@ -870,30 +870,37 @@ function previewCsImport(input) {
       if (!Array.isArray(json)) json = [json];
 
       csImportData = json.map(item => ({
-        hospitalName:    String(item.hospitalName    || "").trim(),
-        goLiveDate:      String(item.goLiveDate      || "").trim(),
-        newOrExisting:   String(item.newOrExisting   || "").trim(),
-        smabe:           String(item.smabe           || "").trim(),
-        mainPerson:      String(item.mainPerson      || "").trim(),
-        subPerson:       String(item.subPerson       || "").trim(),
-        currentTask:     parseInt(item.currentTask)  || 0,
-        keieiShukai:     String(item.keieiShukai     || "").trim(),
-        kyokaBedNum:     String(item.kyokaBedNum     || "").trim(),
-        byokoKosei:      String(item.byokoKosei      || "").trim(),
-        donyuByoko:      String(item.donyuByoko      || "").trim(),
-        donyuBedNum:     String(item.donyuBedNum     || "").trim(),
-        bedsideTerminal: String(item.bedsideTerminal || "").trim(),
-        stationTerminal: String(item.stTerminal || item.stationTerminal || "").trim(),
-        nemiriScan:      String(item.nemiriScan      || "").trim(),
-        rishoCatch:      String(item.rishoCatch      || "").trim(),
-        wifiNav:         String(item.wifiNav         || "").trim(),
-        tabletPos:       String(item.tabletPos       || "").trim(),
-        electronicKarte: String(item.electronicKarte || "").trim(),
-        nurseCall:       String(item.nurseCall       || "").trim(),
-        shuhenRenkei:    String(item.shuhenRenkei    || "").trim(),
-        ankenGaiyou:     String(item.ankenGaiyou     || "").trim(),
-        scheduleStatus:  String(item.scheduleStatus  || "").trim(),
-        memo:            String(item.memo            || "").trim(),
+        // 基本情報
+        hospitalName:    String(item.hospitalName || "").trim(),
+        ward:            String(item.ward         || "").trim(),
+        startDate:       String(item.startDate    || "").trim(),
+        supportEndDate:  String(item.supportEndDate || "").trim(),
+        // 担当者
+        salesPerson:     String(item.salesPerson  || "").trim(),
+        csPerson:        String(item.csPerson     || "").trim(),
+        solPm:           String(item.solPm        || "").trim(),
+        // システム種別
+        systemType1:     String(item.systemType1  || "").trim(),
+        systemType2:     String(item.systemType2  || "").trim(),
+        // 機器フラグ（boolean）
+        hasBedside:      Boolean(item.hasBedside),
+        hasBedNavi:      Boolean(item.hasBedNavi),
+        hasNemiri:       Boolean(item.hasNemiri),
+        hasRisha:        Boolean(item.hasRisha),
+        hasVital:        Boolean(item.hasVital),
+        hasEhr:          Boolean(item.hasEhr),
+        hasNurse:        Boolean(item.hasNurse),
+        hasNcNotify:     Boolean(item.hasNcNotify),
+        // 運用情報
+        moveOp:          String(item.moveOp       || "").trim(),
+        bedNumStaff:     String(item.bedNumStaff  || "").trim(),
+        bedMoveStaff:    String(item.bedMoveStaff || "").trim(),
+        // ステータス
+        state:           String(item.state        || "正常").trim(),
+        taskStatus:      String(item.taskStatus   || "正常").trim(),
+        memo:            String(item.memo         || "").trim(),
+        // 訪問履歴
+        visits:          Array.isArray(item.visits) ? item.visits : [],
         createdAt:       new Date().toISOString(),
       })).filter(d => d.hospitalName);
 
@@ -903,10 +910,10 @@ function previewCsImport(input) {
       document.getElementById("csImportPreviewBody").innerHTML = csImportData.map(d => `
         <tr style="border-bottom:1px solid #f0f2f5;">
           <td style="padding:7px 10px;font-weight:600;">${escapeHtml(d.hospitalName)}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.mainPerson || "―")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.goLiveDate || "未設定")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.kyokaBedNum || "―")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.newOrExisting || "―")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.salesPerson || "―")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.csPerson || "―")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.startDate || "未設定")}</td>
+          <td style="padding:7px 10px;">${escapeHtml(d.systemType1 || "―")}</td>
         </tr>`).join("");
       document.getElementById("csImportPreview").style.display = "block";
       document.getElementById("csImportExecuteBtn").disabled = false;
