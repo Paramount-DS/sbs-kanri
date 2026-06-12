@@ -19,6 +19,9 @@
   --cs-orange:     #e65100;
   --cs-orange-bg:  #fff3e0;
   --cs-orange-bd:  #ffb74d;
+  --cs-red:        #b71c1c;
+  --cs-red-bg:     #ffebee;
+  --cs-red-bd:     #ef5350;
 }
 
 /* CSスイッチボタン（案件管理→CS） */
@@ -80,8 +83,10 @@
 .btn-cs-top:hover { background: var(--cs-primary-lt); transform: translateY(-1px); box-shadow: 0 3px 0 #e7a8c0, 0 5px 12px rgba(239,149,181,.20); }
 
 .cs-phase-bar { background: #fff7fb; border-bottom: 1px solid var(--cs-rose); padding: 7px 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.cs-phase-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 6px; color: #9d4c6e; font-size: 12px; font-weight: 400; white-space: nowrap; min-width: max-content; }
-.cs-phase-item { background: white; border: 1px solid var(--cs-pink); border-radius: 999px; padding: 2px 9px; font-weight: 400; flex-shrink: 0; }
+.cs-phase-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 9px; color: #9d4c6e; font-size: 12px; font-weight: 400; white-space: nowrap; min-width: max-content; }
+.cs-phase-item { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 105px; padding: 3px 5px; flex-shrink: 0; }
+.cs-phase-item strong { color: #7f3f5b; font-size: 12px; line-height: 1.25; }
+.cs-phase-item small { color: #9d4c6e; font-size: 10px; line-height: 1.25; }
 .cs-phase-arrow { color: #b86d8b; font-size: 12px; font-weight: 400; flex-shrink: 0; }
 
 /* CS統計バー */
@@ -95,6 +100,7 @@
 .cs-green .cs-stat-num  { color: var(--cs-green); }
 .cs-yellow .cs-stat-num { color: var(--cs-yellow); }
 .cs-orange .cs-stat-num { color: var(--cs-orange); }
+.cs-red .cs-stat-num    { color: var(--cs-red); }
 
 /* CS検索バー */
 .cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; }
@@ -129,9 +135,11 @@
 .cs-card.cs-status-green  { border-color: var(--cs-green-bd);  background: var(--cs-green-bg); }
 .cs-card.cs-status-yellow { border-color: var(--cs-yellow-bd); background: var(--cs-yellow-bg); }
 .cs-card.cs-status-orange { border-color: var(--cs-orange-bd); background: var(--cs-orange-bg); }
+.cs-card.cs-status-red    { border-color: var(--cs-red-bd);    background: var(--cs-red-bg); }
 .cs-card.cs-status-green::before  { background: var(--cs-green-bd); }
 .cs-card.cs-status-yellow::before { background: var(--cs-yellow-bd); }
 .cs-card.cs-status-orange::before { background: var(--cs-orange-bd); }
+.cs-card.cs-status-red::before    { background: var(--cs-red-bd); }
 
 /* EOSバッジ */
 .eos-badge { position: absolute; top: 10px; right: 10px; background: #b71c1c; color: white; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; letter-spacing: .04em; }
@@ -166,6 +174,7 @@
 .cs-visit-status-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 600; }
 .cs-visit-status-badge.onboarding { background: #e3f2fd; color: #1565c0; }
 .cs-visit-status-badge.support    { background: var(--cs-primary-lt); color: var(--cs-primary-dk); }
+.cs-visit-score { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: white; color: #4a3440; border: 1px solid #dfe3ea; font-weight: 700; white-space: nowrap; }
 .btn-cs-visit-edit, .btn-cs-visit-delete { border: 1px solid #e2e6ed; border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; background: white; color: #5a6475; }
 .btn-cs-visit-edit:hover { background: var(--cs-primary-lt); border-color: var(--cs-pink); color: #9d4c6e; }
 .btn-cs-visit-delete { color: #c0392b; border-color: #f5c6c6; }
@@ -173,6 +182,29 @@
 .cs-visit-date { font-size: 11px; color: #9aa5b4; margin-left: auto; }
 .cs-visit-text { font-size: 12px; color: #3a4252; white-space: pre-wrap; word-break: break-all; margin-top: 2px; padding-left: 28px; }
 .cs-card-memo { background: #fff9fb; border: 1px solid var(--cs-rose); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #4a3440; white-space: pre-wrap; word-break: break-all; }
+
+/* ヘルススコア */
+.cs-health-section { border: 1px solid #dfe3ea; background: rgba(255,255,255,.88); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 9px; }
+.cs-health-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cs-health-title { font-size: 12px; font-weight: 800; color: #3a4252; }
+.cs-health-result { display: inline-flex; align-items: baseline; gap: 5px; border: 1px solid currentColor; border-radius: 6px; padding: 3px 8px; background: white; font-size: 11px; font-weight: 800; }
+.cs-health-result strong { font-size: 17px; line-height: 1; }
+.cs-health-result.cs-status-green { color: var(--cs-green); }
+.cs-health-result.cs-status-yellow { color: var(--cs-yellow); }
+.cs-health-result.cs-status-orange { color: var(--cs-orange); }
+.cs-health-result.cs-status-red { color: var(--cs-red); }
+.cs-health-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.cs-health-settings label { display: flex; flex-direction: column; gap: 3px; min-width: 0; color: #5a6475; font-size: 9px; font-weight: 700; }
+.cs-health-settings select { width: 100%; min-width: 0; border: 1px solid #dfe3ea; border-radius: 5px; padding: 5px 4px; background: white; color: #303746; font-family: inherit; font-size: 10px; }
+.cs-health-scores { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.cs-health-score-item { display: flex; flex-direction: column; justify-content: space-between; gap: 4px; min-width: 0; min-height: 48px; border: 1px solid #dfe3ea; border-radius: 5px; padding: 5px 3px; background: white; text-align: center; }
+.cs-health-score-item span { color: #5a6475; font-size: 9px; line-height: 1.15; overflow-wrap: anywhere; }
+.cs-health-score-item strong { color: #1e2330; font-size: 15px; line-height: 1; }
+.cs-health-score-item.is-future { background: #f4f5f7; opacity: .62; }
+.cs-health-settings select:focus { outline: none; border-color: var(--cs-primary); box-shadow: 0 0 0 2px rgba(239,149,181,.2); }
+.cs-health-actions { border-top: 1px solid #e7e9ee; padding-top: 7px; }
+.cs-health-actions > span { display: block; margin-bottom: 4px; color: #5a6475; font-size: 10px; font-weight: 800; }
+.cs-health-actions p { margin: 2px 0; color: #3a4252; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
 
 /* CSタスク */
 .cs-task-section { border: 1px solid var(--cs-rose); background: #fff9fb; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -211,6 +243,8 @@
 /* ステータスセレクト */
 .status-select-cs { border: 2px solid var(--cs-rose); border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; background: white; width: 100%; cursor: pointer; font-family: inherit; }
 .status-select-cs:focus { border-color: var(--cs-primary); }
+.visit-score-range { width: 100%; accent-color: var(--cs-primary); cursor: pointer; }
+.visit-score-scale { display: flex; justify-content: space-between; color: #9aa5b4; font-size: 10px; }
 
 /* CSモーダルボックス */
 .cs-modal-box { max-width: 520px; }
@@ -219,16 +253,17 @@
 /* CS一覧 */
 .cs-list-content { max-width: 1400px; margin: 0 auto; padding: 20px; }
 .cs-table-wrap { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.cs-status-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; min-width: 780px; }
+.cs-status-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; min-width: 980px; }
 .cs-status-table thead { background: linear-gradient(90deg, var(--cs-primary-dk), var(--cs-primary)); color: white; position: sticky; top: 0; z-index: 10; }
 .cs-status-table th { padding: 12px 12px; text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
 .cs-status-table td { padding: 11px 12px; color: #1e2330; vertical-align: middle; border-bottom: 1px solid #f0dbe4; }
-.cs-status-table th:nth-child(1), .cs-status-table td:nth-child(1) { width: 14%; }
-.cs-status-table th:nth-child(2), .cs-status-table td:nth-child(2) { width: 9%; }
-.cs-status-table th:nth-child(3), .cs-status-table td:nth-child(3) { width: 11%; }
-.cs-status-table th:nth-child(4), .cs-status-table td:nth-child(4) { width: 12%; }
-.cs-status-table th:nth-child(5), .cs-status-table td:nth-child(5) { width: 12%; }
-.cs-status-table th:nth-child(6), .cs-status-table td:nth-child(6) { width: 42%; }
+.cs-status-table th:nth-child(1), .cs-status-table td:nth-child(1) { width: 12%; }
+.cs-status-table th:nth-child(2), .cs-status-table td:nth-child(2) { width: 18%; }
+.cs-status-table th:nth-child(3), .cs-status-table td:nth-child(3) { width: 10%; }
+.cs-status-table th:nth-child(4), .cs-status-table td:nth-child(4) { width: 20%; }
+.cs-status-table th:nth-child(5), .cs-status-table td:nth-child(5) { width: 10%; }
+.cs-status-table th:nth-child(6), .cs-status-table td:nth-child(6) { width: 12%; }
+.cs-status-table th:nth-child(7), .cs-status-table td:nth-child(7) { width: 18%; }
 .cs-status-table tbody tr:hover { background: #fff8fb; }
 .cs-list-hospital { font-weight: 700; color: #9d4c6e; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .cs-list-products { color: #5a6475; font-size: 12px; }
@@ -236,6 +271,11 @@
 .cs-list-loading { text-align: center; padding: 48px; color: #9aa5b4; font-size: 14px; }
 .cs-list-status { display: inline-flex; align-items: center; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: var(--cs-primary-lt); color: #9d4c6e; border: 1px solid var(--cs-pink); white-space: nowrap; }
 .cs-list-state { display: inline-flex; align-items: center; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: #f8f9fb; color: #4a3440; border: 1px solid #e2e6ed; white-space: nowrap; }
+.cs-list-health { display: inline-flex; min-width: 36px; justify-content: center; border: 1px solid currentColor; border-radius: 6px; padding: 3px 7px; background: white; font-size: 12px; font-weight: 800; }
+.cs-list-health.cs-status-green { color: var(--cs-green); }
+.cs-list-health.cs-status-yellow { color: var(--cs-yellow); }
+.cs-list-health.cs-status-orange { color: var(--cs-orange); }
+.cs-list-health.cs-status-red { color: var(--cs-red); }
 .cs-list-visit { white-space: nowrap; font-weight: 600; }
 .cs-list-visit.last-visit-green { color: var(--cs-green); background: transparent; border: none; padding: 0; }
 .cs-list-visit.last-visit-yellow { color: var(--cs-yellow); background: transparent; border: none; padding: 0; }
@@ -248,6 +288,7 @@
   .cs-card-actions { flex-direction: column; }
   .btn-cs-next { width: 100%; }
   .cs-task-controls { grid-template-columns: 1fr; }
+  .cs-health-scores { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (min-width: 1100px) {
   .cs-grid { grid-template-columns: repeat(3, 1fr); }
@@ -305,3 +346,13 @@
   font-family: inherit;
 }
 .btn-cs-import:hover { background: rgba(255,255,255,.3); }
+.btn-cs-card-import {
+  background: #fff;
+  color: var(--cs-primary);
+  border-color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 0 rgba(157,76,110,.28), 0 3px 8px rgba(0,0,0,.10);
+}
+.btn-cs-card-import:hover {
+  background: var(--cs-primary-lt);
+}

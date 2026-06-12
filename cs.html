@@ -21,17 +21,24 @@
       <span class="cs-branch-tag">CUSTOMER SUCCESS</span>
     </div>
     <div class="cs-header-actions">
-      <a href="cs-list.html" class="btn-cs-list">📊 CS一覧</a>
-      <button class="btn-cs-import" onclick="openCsImportModal()">📥 JSON取込</button>
-      <button class="btn-add-cs" onclick="openCsAddModal()">＋ CS案件登録</button>
-      <a href="index.html" class="btn-back-project">← 案件管理</a>
+      <a href="cs-list.html" class="btn-cs-list">一覧</a>
+      <button class="btn-add-cs" onclick="openCsAddModal()">案件登録</button>
+      <a href="index.html" class="btn-back-project">案件管理</a>
     </div>
   </div>
 </header>
 
 <div class="cs-phase-bar">
   <div class="cs-phase-inner">
-    <span class="cs-phase-item">支援計画</span><span class="cs-phase-arrow">→</span><span class="cs-phase-item">定着</span><span class="cs-phase-arrow">→</span><span class="cs-phase-item">活用促進</span><span class="cs-phase-arrow">→</span><span class="cs-phase-item">成果創出</span><span class="cs-phase-arrow">→</span><span class="cs-phase-item">拡大</span><span class="cs-phase-arrow">→</span><span class="cs-phase-item">事例創出</span>
+    <span class="cs-phase-item"><strong>支援計画</strong><small>Deployment</small></span>
+    <span class="cs-phase-arrow">-</span>
+    <span class="cs-phase-item"><strong>定着</strong><small>Adoption</small></span>
+    <span class="cs-phase-arrow">-</span>
+    <span class="cs-phase-item"><strong>活用促進</strong><small>Engagement</small></span>
+    <span class="cs-phase-arrow">-</span>
+    <span class="cs-phase-item"><strong>成果創出</strong><small>Outcome</small></span>
+    <span class="cs-phase-arrow">-</span>
+    <span class="cs-phase-item"><strong>拡大/事例創出</strong><small>ROI/Expansion</small></span>
   </div>
 </div>
 
@@ -42,7 +49,8 @@
     <div class="cs-stat-div"></div>
     <div class="cs-stat-item cs-green"><span class="cs-stat-num" id="csGreenStat">0</span><span class="cs-stat-label">件 良好</span></div>
     <div class="cs-stat-item cs-yellow"><span class="cs-stat-num" id="csYellowStat">0</span><span class="cs-stat-label">件 注意</span></div>
-    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 要対応</span></div>
+    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 リスク</span></div>
+    <div class="cs-stat-item cs-red"><span class="cs-stat-num" id="csRedStat">0</span><span class="cs-stat-label">件 重大リスク</span></div>
   </div>
 </div>
 
@@ -64,7 +72,7 @@
   <div class="empty-state" id="csEmptyState" style="display:none;">
     <span class="empty-icon">⭐</span>
     <p>CS案件が見つかりません</p>
-    <p style="font-size:12px;color:#9aa5b4">「CS案件登録」から追加してください</p>
+    <p style="font-size:12px;color:#9aa5b4">「案件登録」から追加してください</p>
   </div>
 </main>
 
@@ -190,13 +198,17 @@
         <div class="form-group">
           <label class="form-label">ステータス</label>
           <select id="visitStatus" class="status-select-cs">
-            <option value="支援計画">支援計画</option>
-            <option value="定着">定着</option>
-            <option value="活用促進">活用促進</option>
-            <option value="成果創出">成果創出</option>
-            <option value="拡大">拡大</option>
-            <option value="事例創出">事例創出</option>
+            <option value="支援計画">支援計画/Deployment</option>
+            <option value="定着">定着/Adoption</option>
+            <option value="活用促進">活用促進/Engagement</option>
+            <option value="成果創出">成果創出/Outcome</option>
+            <option value="拡大/事例創出">拡大/事例創出 / ROI/Expansion</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">達成度 <strong id="visitScoreValue">0</strong></label>
+          <input type="range" id="visitScore" class="visit-score-range" min="0" max="100" value="0" oninput="document.getElementById('visitScoreValue').textContent=this.value"/>
+          <div class="visit-score-scale"><span>0</span><span>100</span></div>
         </div>
         <div class="form-group">
           <label class="form-label">訪問日/対応日（開始）</label>
@@ -259,7 +271,7 @@
 <div id="csImportModal" class="modal-overlay">
   <div class="modal-box" style="max-width:680px;">
     <div class="modal-header">
-      <h2>📥 JSON一括取込</h2>
+      <h2>データ一括取込</h2>
       <button class="btn-modal-close" onclick="closeCsImportModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -272,6 +284,11 @@
       <div class="form-group">
         <label class="form-label">JSONファイルを選択（.json / .txt）</label>
         <input type="file" id="csImportFileInput" accept=".json,.txt" class="form-input" style="padding:8px;" onchange="previewCsImport(this)"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">元データ表を貼り付け（Excelからコピー）</label>
+        <textarea id="csImportTableInput" class="form-textarea" rows="6" placeholder="病院名から始まる表をここに貼り付け"></textarea>
+        <button type="button" class="btn btn-secondary" style="margin-top:8px;" onclick="previewCsTableImport()">貼り付け表を確認</button>
       </div>
       <div id="csImportPreview" style="display:none;margin-top:12px;">
         <div style="font-size:13px;font-weight:600;color:#1e2330;margin-bottom:8px;">
@@ -305,6 +322,7 @@
 <div id="toast" class="toast"></div>
 
 <script src="firebase-config.js"></script>
+<script src="cs-card-data.js"></script>
 <script src="cs.js"></script>
 </body>
 </html>

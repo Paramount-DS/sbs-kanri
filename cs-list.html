@@ -20,7 +20,7 @@
       <span class="cs-branch-tag">CS LIST</span>
     </div>
     <div class="cs-header-actions">
-      <a href="cs.html" class="btn-cs-list">← CSカード</a>
+      <a href="cs.html" class="btn-cs-list">カード</a>
       <a href="index.html" class="btn-cs-top">案件管理</a>
     </div>
   </div>
@@ -32,7 +32,8 @@
     <div class="cs-stat-div"></div>
     <div class="cs-stat-item cs-green"><span class="cs-stat-num" id="csGreenStat">0</span><span class="cs-stat-label">件 良好</span></div>
     <div class="cs-stat-item cs-yellow"><span class="cs-stat-num" id="csYellowStat">0</span><span class="cs-stat-label">件 注意</span></div>
-    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 要対応</span></div>
+    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 リスク</span></div>
+    <div class="cs-stat-item cs-red"><span class="cs-stat-num" id="csRedStat">0</span><span class="cs-stat-label">件 重大リスク</span></div>
   </div>
 </div>
 
@@ -52,16 +53,17 @@
     <table class="cs-status-table">
       <thead>
         <tr>
+          <th>状態</th>
           <th>病院名</th>
           <th>担当</th>
           <th>CSステータス</th>
-          <th>状態</th>
+          <th>ヘルススコア</th>
           <th>最終対応日</th>
           <th>メモ</th>
         </tr>
       </thead>
       <tbody id="csTableBody">
-        <tr><td colspan="6" class="cs-list-loading">読み込み中...</td></tr>
+        <tr><td colspan="7" class="cs-list-loading">読み込み中...</td></tr>
       </tbody>
     </table>
   </div>

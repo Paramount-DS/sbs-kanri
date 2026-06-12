@@ -212,14 +212,24 @@ function getLatestVisit(p) {
 }
 
 function getVisitStatusLabel(status) {
-  if (status === "onboarding" || status === "OBD") return "支援計画";
-  if (status === "support" || status === "SUP" || status === "活用") return "活用促進";
-  return status || "—";
+  const labels = {
+    "支援計画": "支援計画/Deployment",
+    "定着": "定着/Adoption",
+    "活用促進": "活用促進/Engagement",
+    "成果創出": "成果創出/Outcome",
+    "拡大": "拡大/事例創出 / ROI/Expansion",
+    "事例創出": "拡大/事例創出 / ROI/Expansion",
+    "拡大/事例創出": "拡大/事例創出 / ROI/Expansion",
+  };
+  if (status === "onboarding" || status === "OBD") return labels["支援計画"];
+  if (status === "support" || status === "SUP" || status === "活用") return labels["活用促進"];
+  return labels[status] || status || "—";
 }
 
 function normalizeVisitStatus(status) {
   if (status === "onboarding" || status === "OBD") return "支援計画";
   if (status === "support" || status === "SUP" || status === "活用") return "活用促進";
+  if (status === "拡大" || status === "事例創出") return "拡大/事例創出";
   return status || "支援計画";
 }
 
@@ -242,12 +252,109 @@ function getCsState(p) {
   return p.state || p.taskStatus || "正常";
 }
 
+const CS_HEALTH_PHASES = [
+  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 20 },
+  { key: "定着", label: "定着", english: "Adoption", weight: 30 },
+  { key: "活用促進", label: "活用促進", english: "Engagement", weight: 20 },
+  { key: "成果創出", label: "成果創出", english: "Outcome", weight: 20 },
+  { key: "拡大/事例創出", label: "拡大/事例創出", english: "ROI/Expansion", weight: 10 },
+];
+
+function normalizeHealthPhase(status) {
+  const normalized = normalizeVisitStatus(status);
+  if (normalized === "拡大" || normalized === "事例創出") return "拡大/事例創出";
+  return normalized;
+}
+
+function normalizeHealthModel(value) {
+  if (value === "Lite") return "SBS-Lite";
+  return ["SBS", "SBS-Lite", "Connectハイブリット", "Connectオンプレ"].includes(value) ? value : "SBS";
+}
+
+function getCsHealthValues(p) {
+  const values = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, 0]));
+  (p.visits || []).forEach(visit => {
+    const key = normalizeHealthPhase(visit.status);
+    if (!(key in values)) return;
+    const score = Number(visit.score);
+    values[key] = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0;
+  });
+  return values;
+}
+
+function getCsHealth(p) {
+  const values = getCsHealthValues(p);
+  const visits = p.visits || [];
+  let currentIndex = -1;
+  visits.forEach(visit => {
+    const index = CS_HEALTH_PHASES.findIndex(phase => phase.key === normalizeHealthPhase(visit.status));
+    if (index > currentIndex) currentIndex = index;
+  });
+  const activePhases = currentIndex >= 0 ? CS_HEALTH_PHASES.slice(0, currentIndex + 1) : [];
+  const activeWeight = activePhases.reduce((sum, phase) => sum + phase.weight, 0);
+  const weightedScore = activePhases.reduce((sum, phase) => sum + values[phase.key] * phase.weight, 0);
+  const score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
+  if (score >= 85) return { score, label: "良好", className: "cs-status-green", values, currentIndex };
+  if (score >= 70) return { score, label: "注意", className: "cs-status-yellow", values, currentIndex };
+  if (score >= 50) return { score, label: "リスク", className: "cs-status-orange", values, currentIndex };
+  return { score, label: "重大リスク", className: "cs-status-red", values, currentIndex };
+}
+
+function getCsHealthActions(values, currentIndex) {
+  if (currentIndex < 0) return ["次の訪問追加から支援計画の達成度を登録してください。"];
+  const actions = [];
+  if (currentIndex >= 0 && values["支援計画"] < 70) actions.push("Deployment：未導入範囲・未教育者を確認し、初期稼働条件を再整理する。");
+  if (currentIndex >= 1 && values["定着"] < 70) actions.push("Adoption：利用ログを確認し、未活用機能・未利用部署への再教育を実施する。");
+  if (currentIndex >= 2 && values["活用促進"] < 70) actions.push("Engagement：定例会・管理者面談を設定し、現場課題を改善アクションに落とす。");
+  if (currentIndex >= 3 && values["成果創出"] < 70) actions.push("Outcome：成果指標の現状値・目標値・改善結果を再設定する。");
+  if (currentIndex >= 4 && values["拡大/事例創出"] < 70) actions.push("ROI / Expansion：費用対効果または拡大提案に必要な根拠データを整理する。");
+  if (!actions.length) actions.push("全体状態は良好。更新・追加導入・他部署展開の提案タイミング。");
+  return actions;
+}
+
+function createCsHealthSection(p) {
+  const health = getCsHealth(p);
+  const actions = getCsHealthActions(health.values, health.currentIndex);
+  const healthModel = normalizeHealthModel(p.healthModel || p.systemType1);
+  return `
+    <div class="cs-health-section" data-health-id="${p.id}">
+      <div class="cs-health-header">
+        <span class="cs-health-title">ヘルススコア</span>
+        <span class="cs-health-result ${health.className}"><strong>${health.score}</strong>${health.label}</span>
+      </div>
+      <div class="cs-health-settings">
+        <label>モデル<select data-health-setting="model" onchange="updateCsHealthSettings('${p.id}')">
+          ${["SBS","SBS-Lite","Connectハイブリット","Connectオンプレ"].map(value => `<option value="${value}"${healthModel === value ? " selected" : ""}>${value}</option>`).join("")}
+        </select></label>
+        <label>導入範囲<select data-health-setting="scale" onchange="updateCsHealthSettings('${p.id}')">
+          <option value="all"${(p.healthScale || "all") === "all" ? " selected" : ""}>全床導入</option>
+          <option value="partial"${p.healthScale === "partial" ? " selected" : ""}>部分導入</option>
+        </select></label>
+        <label>Outcome<select data-health-setting="outcomeType" onchange="updateCsHealthSettings('${p.id}')">
+          <option value="labor"${(p.healthOutcomeType || "labor") === "labor" ? " selected" : ""}>労務削減</option>
+          <option value="retention"${p.healthOutcomeType === "retention" ? " selected" : ""}>人材定着</option>
+          <option value="efficiency"${p.healthOutcomeType === "efficiency" ? " selected" : ""}>業務効率</option>
+          <option value="safety"${p.healthOutcomeType === "safety" ? " selected" : ""}>医療安全</option>
+          <option value="quality"${p.healthOutcomeType === "quality" ? " selected" : ""}>質の改善</option>
+        </select></label>
+      </div>
+      <div class="cs-health-scores">
+        ${CS_HEALTH_PHASES.map((phase, index) => `<div class="cs-health-score-item${index > (health.currentIndex ?? -1) ? " is-future" : ""}"><span>${phase.english}</span><strong>${health.values[phase.key]}</strong></div>`).join("")}
+      </div>
+      <div class="cs-health-actions">
+        <span>CSアクション</span>
+        ${actions.map(action => `<p>${escapeHtml(action)}</p>`).join("")}
+      </div>
+    </div>`;
+}
+
 function getCsPhase(key) {
   return CS_PHASES.find(phase => phase.key === key) || CS_PHASES[0];
 }
 
 function getCurrentCsPhase(p) {
-  return getCsPhase(normalizeVisitStatus(getLatestVisit(p)?.status));
+  const status = normalizeVisitStatus(getLatestVisit(p)?.status);
+  return getCsPhase(status === "拡大/事例創出" ? "拡大" : status);
 }
 
 function getCsTaskSelection(p) {
@@ -286,7 +393,7 @@ function createCsStateSelect(p) {
 // CSカード生成
 // =============================================
 function createCsCard(p) {
-  const colorClass = getVisitColorClass(p);
+  const colorClass = getCsHealth(p).className;
   const lastVisit  = getLastVisitInfo(p);
   const showEos    = shouldShowEos(p);
   const visits     = p.visits || [];
@@ -308,6 +415,7 @@ function createCsCard(p) {
           <span class="cs-visit-status-badge ${v.status}">
             ${escapeHtml(getVisitStatusLabel(v.status))}
           </span>
+          <span class="cs-visit-score">達成度 ${Number(v.score) || 0}</span>
           <button class="btn-cs-visit-edit" onclick="openVisitModal('${p.id}', ${realIdx})">編集</button>
           <button class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
@@ -334,6 +442,7 @@ function createCsCard(p) {
       <div class="cs-card-state-row"><span class="cs-visits-label">状態</span>${createCsStateSelect(p)}</div>
       ${products.length ? `<div class="cs-products">${products.map(pr => `<span class="cs-product-badge">${pr}</span>`).join("")}</div>` : ""}
       ${p.memo ? `<div class="cs-card-memo">${escapeHtml(p.memo)}</div>` : ""}
+      ${createCsHealthSection(p)}
       <div class="${lastVisit.cls} last-visit-indicator">${lastVisit.text}</div>
       ${visits.length
         ? `<div class="cs-visits-section">
@@ -343,7 +452,7 @@ function createCsCard(p) {
         : `<div class="last-visit-none last-visit-indicator">訪問記録がありません</div>`}
       ${createCsTaskSection(p)}
       <div class="cs-card-actions">
-        <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">＋ 次の訪問を追加</button>
+        <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">次の訪問を追加</button>
         <button class="btn-cs-detail" onclick="openCsDetailModal('${p.id}')">詳細</button>
         <button class="btn-cs-edit" onclick="openCsEditModal('${p.id}')">編集</button>
         <button class="btn-cs-delete" onclick="openCsDeleteModal('${p.id}')">削除</button>
@@ -365,9 +474,8 @@ function renderCsProjects() {
     return matchName && matchPerson;
   });
 
-  // 要対応→注意→良好→記録なし
-  const pri = { "cs-status-orange":0, "cs-status-yellow":1, "cs-status-green":2, "":3 };
-  filtered.sort((a, b) => (pri[getVisitColorClass(a)] ?? 3) - (pri[getVisitColorClass(b)] ?? 3));
+  const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
+  filtered.sort((a, b) => (pri[getCsHealth(a).className] ?? 4) - (pri[getCsHealth(b).className] ?? 4));
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
 
@@ -384,11 +492,13 @@ function renderCsProjects() {
 function createCsListRow(p) {
   const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
+  const health = getCsHealth(p);
   return `<tr>
+    <td><span class="cs-list-state">${escapeHtml(getCsState(p))}</span></td>
     <td class="cs-list-hospital" onclick="openCsDetailModal('${p.id}')">${escapeHtml(p.hospitalName || "")}</td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
-    <td><span class="cs-list-state">${escapeHtml(getCsState(p))}</span></td>
+    <td><span class="cs-list-health ${health.className}">${health.score}</span></td>
     <td><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
     <td class="cs-list-memo">${escapeHtml(getLatestVisitMemo(p))}</td>
   </tr>`;
@@ -406,10 +516,10 @@ function renderCsList() {
     return matchName && matchPerson;
   });
 
-  const pri = { "cs-status-orange":0, "cs-status-yellow":1, "cs-status-green":2, "":3 };
+  const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
   filtered.sort((a, b) => {
-    const pa = pri[getVisitColorClass(a)] ?? 3;
-    const pb = pri[getVisitColorClass(b)] ?? 3;
+    const pa = pri[getCsHealth(a).className] ?? 4;
+    const pb = pri[getCsHealth(b).className] ?? 4;
     if (pa !== pb) return pa - pb;
     return (a.startDate || "").localeCompare(b.startDate || "");
   });
@@ -417,7 +527,7 @@ function renderCsList() {
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
   tbody.innerHTML = filtered.length
     ? filtered.map(createCsListRow).join("")
-    : `<tr><td colspan="6" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+    : `<tr><td colspan="7" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
   updateCsStats();
 }
 
@@ -431,10 +541,12 @@ function updateCsStats() {
   const green = document.getElementById("csGreenStat");
   const yellow = document.getElementById("csYellowStat");
   const orange = document.getElementById("csOrangeStat");
+  const red = document.getElementById("csRedStat");
   if (total)  total.textContent  = allCsProjects.length;
-  if (green)  green.textContent  = allCsProjects.filter(p => getVisitColorClass(p) === "cs-status-green").length;
-  if (yellow) yellow.textContent = allCsProjects.filter(p => getVisitColorClass(p) === "cs-status-yellow").length;
-  if (orange) orange.textContent = allCsProjects.filter(p => getVisitColorClass(p) === "cs-status-orange").length;
+  if (green)  green.textContent  = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-green").length;
+  if (yellow) yellow.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-yellow").length;
+  if (orange) orange.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-orange").length;
+  if (red) red.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-red").length;
 }
 
 // =============================================
@@ -642,16 +754,20 @@ function openVisitModal(projectId, editIndex = -1) {
   const visits = p.visits || [];
   const targetVisit = editIndex >= 0 ? visits[editIndex] : null;
   const nextNum = targetVisit ? editIndex + 1 : visits.length + 1;
+  document.getElementById("visitForm").reset();
   document.getElementById("visitNumLabel").textContent    = targetVisit ? `第 ${nextNum} 回 編集` : `第 ${nextNum} 回`;
   document.getElementById("visitHospitalLabel").textContent = p.hospitalName;
   document.getElementById("visitProjectId").value         = projectId;
   document.getElementById("visitEditIndex").value         = editIndex;
-  document.getElementById("visitForm").reset();
+  document.getElementById("visitScore").value = 0;
+  document.getElementById("visitScoreValue").textContent = "0";
   if (targetVisit) {
     document.getElementById("visitStatus").value = normalizeVisitStatus(targetVisit.status);
     document.getElementById("visitStartDate").value = targetVisit.startDate || "";
     document.getElementById("visitEndDate").value = targetVisit.endDate || "";
     document.getElementById("visitFreeText").value = targetVisit.freeText || "";
+    document.getElementById("visitScore").value = Number(targetVisit.score) || 0;
+    document.getElementById("visitScoreValue").textContent = String(Number(targetVisit.score) || 0);
   }
   document.getElementById("visitModal").classList.add("open");
 }
@@ -669,6 +785,7 @@ async function saveVisit(e) {
 
   const visit = {
     status:    document.getElementById("visitStatus").value,
+    score:     Math.max(0, Math.min(100, Number(document.getElementById("visitScore").value) || 0)),
     startDate: document.getElementById("visitStartDate").value,
     endDate:   document.getElementById("visitEndDate").value,
     freeText:  document.getElementById("visitFreeText").value.trim(),
@@ -715,6 +832,28 @@ async function updateCsState(projectId, state) {
   } catch (err) {
     console.error(err);
     showToast("状態の更新に失敗しました", "error");
+  }
+}
+
+async function updateCsHealthSettings(projectId) {
+  const section = document.querySelector(`[data-health-id="${projectId}"]`);
+  if (!section) return;
+  const getSetting = key => section.querySelector(`[data-health-setting="${key}"]`)?.value || "";
+  const data = {
+    healthModel: getSetting("model"),
+    healthScale: getSetting("scale"),
+    healthOutcomeType: getSetting("outcomeType"),
+    healthUpdatedAt: new Date().toISOString(),
+  };
+  const localProject = allCsProjects.find(project => project.id === projectId);
+  if (localProject) Object.assign(localProject, data);
+  renderCsView();
+  try {
+    await db.collection("cs_projects").doc(projectId).update(data);
+    showToast("ヘルススコア設定を更新しました");
+  } catch (err) {
+    console.error(err);
+    showToast("ヘルススコア設定の更新に失敗しました", "error");
   }
 }
 
@@ -842,6 +981,8 @@ let csImportData = [];
 function openCsImportModal() {
   csImportData = [];
   document.getElementById("csImportFileInput").value = "";
+  const tableInput = document.getElementById("csImportTableInput");
+  if (tableInput) tableInput.value = "";
   document.getElementById("csImportPreview").style.display = "none";
   document.getElementById("csImportNoData").style.display = "none";
   document.getElementById("csImportError").textContent = "";
@@ -854,8 +995,167 @@ function closeCsImportModal() {
   csImportData = [];
 }
 
+function normalizeCsHeader(value) {
+  return String(value || "")
+    .replace(/\s+/g, "")
+    .replace(/[▼▽]/g, "")
+    .trim();
+}
+
+function isCheckedCell(value) {
+  return ["○", "〇", "◯", "o", "O", "1", "true", "TRUE", "有", "あり", "yes", "YES"].includes(String(value || "").trim());
+}
+
+function getTableValue(row, indexes, names) {
+  for (const name of names) {
+    const index = indexes[normalizeCsHeader(name)];
+    if (index !== undefined) return row[index] || "";
+  }
+  return "";
+}
+
+function parseCsTableText(text) {
+  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  const headers = lines[0].split(delimiter).map(normalizeCsHeader);
+  const indexes = {};
+  headers.forEach((header, index) => { if (header) indexes[header] = index; });
+
+  return lines.slice(1).map(line => {
+    const row = line.split(delimiter);
+    const hospitalName = getTableValue(row, indexes, ["病院名"]);
+    return {
+      type: "cs",
+      hospitalName,
+      ward: getTableValue(row, indexes, ["導入病棟"]),
+      startDate: getTableValue(row, indexes, ["稼働開始日"]),
+      supportEndDate: getTableValue(row, indexes, ["稼働終了日"]),
+      salesPerson: getTableValue(row, indexes, ["担当営業"]),
+      csPerson: getTableValue(row, indexes, ["担当CS"]),
+      solPm: getTableValue(row, indexes, ["SOL PM", "SOLPM"]),
+      systemType1: getTableValue(row, indexes, ["システム種類1"]),
+      systemType2: getTableValue(row, indexes, ["システム種類2"]),
+      hasBedside: isCheckedCell(getTableValue(row, indexes, ["BS端末"])),
+      hasBedNavi: isCheckedCell(getTableValue(row, indexes, ["ベッドナビ"])),
+      hasNemiri: isCheckedCell(getTableValue(row, indexes, ["眠りSCAN"])),
+      hasRisha: isCheckedCell(getTableValue(row, indexes, ["離床CATCH"])),
+      hasVital: isCheckedCell(getTableValue(row, indexes, ["バイタル連携"])),
+      hasEhr: isCheckedCell(getTableValue(row, indexes, ["EHR連携"])),
+      hasNurse: isCheckedCell(getTableValue(row, indexes, ["NC情報連携"])),
+      hasNcNotify: isCheckedCell(getTableValue(row, indexes, ["NC通知連携"])),
+      moveOp: getTableValue(row, indexes, ["病床移動時の運用"]),
+      bedNumStaff: getTableValue(row, indexes, ["病床番号変更担当"]),
+      bedMoveStaff: getTableValue(row, indexes, ["床頭台移動担当"]),
+      state: getTableValue(row, indexes, ["状態"]) || "正常",
+      taskStatus: getTableValue(row, indexes, ["状態"]) || "正常",
+      memo: getTableValue(row, indexes, ["メモ"]),
+      visits: [],
+    };
+  }).filter(row => row.hospitalName);
+}
+
+function normalizeCsImportItems(json) {
+  const rows = Array.isArray(json) ? json : [json];
+  const byHospital = new Map();
+  rows.map(item => ({
+    type:            "cs",
+    hospitalName:    String(item.hospitalName || "").trim(),
+    ward:            String(item.ward         || "").trim(),
+    startDate:       String(item.startDate    || "").trim(),
+    supportEndDate:  String(item.supportEndDate || "").trim(),
+    salesPerson:     String(item.salesPerson  || "").trim(),
+    csPerson:        String(item.csPerson     || "").trim(),
+    solPm:           String(item.solPm        || "").trim(),
+    systemType1:     String(item.systemType1  || "").trim(),
+    systemType2:     String(item.systemType2  || "").trim(),
+    hasBedside:      Boolean(item.hasBedside),
+    hasBedNavi:      Boolean(item.hasBedNavi),
+    hasNemiri:       Boolean(item.hasNemiri),
+    hasRisha:        Boolean(item.hasRisha),
+    hasVital:        Boolean(item.hasVital),
+    hasEhr:          Boolean(item.hasEhr),
+    hasNurse:        Boolean(item.hasNurse),
+    hasNcNotify:     Boolean(item.hasNcNotify),
+    moveOp:          String(item.moveOp       || "").trim(),
+    bedNumStaff:     String(item.bedNumStaff  || "").trim(),
+    bedMoveStaff:    String(item.bedMoveStaff || "").trim(),
+    state:           String(item.state        || "正常").trim(),
+    taskStatus:      String(item.taskStatus   || item.state || "正常").trim(),
+    memo:            String(item.memo         || "").trim(),
+    visits:          Array.isArray(item.visits) ? item.visits : [],
+    createdAt:       new Date().toISOString(),
+  })).filter(d => d.hospitalName).forEach(item => {
+    byHospital.set(item.hospitalName, item);
+  });
+  return Array.from(byHospital.values());
+}
+
+function renderCsImportPreview(data) {
+  csImportData = normalizeCsImportItems(data);
+  const preview = document.getElementById("csImportPreview");
+  const noData = document.getElementById("csImportNoData");
+  const executeBtn = document.getElementById("csImportExecuteBtn");
+
+  preview.style.display = "none";
+  noData.style.display = "none";
+  executeBtn.disabled = true;
+
+  if (csImportData.length === 0) {
+    noData.style.display = "block";
+    return;
+  }
+
+  document.getElementById("csImportCount").textContent = csImportData.length;
+  document.getElementById("csImportPreviewBody").innerHTML = csImportData.map(d => `
+    <tr style="border-bottom:1px solid #f0f2f5;">
+      <td style="padding:7px 10px;font-weight:600;">${escapeHtml(d.hospitalName)}</td>
+      <td style="padding:7px 10px;">${escapeHtml(d.salesPerson || "―")}</td>
+      <td style="padding:7px 10px;">${escapeHtml(d.csPerson || "―")}</td>
+      <td style="padding:7px 10px;">${escapeHtml(d.startDate || "未設定")}</td>
+      <td style="padding:7px 10px;">${escapeHtml(d.systemType1 || "―")}</td>
+    </tr>`).join("");
+  preview.style.display = "block";
+  executeBtn.disabled = false;
+}
+
+function previewBundledCsCardImport() {
+  document.getElementById("csImportFileInput").value = "";
+  const tableInput = document.getElementById("csImportTableInput");
+  if (tableInput) tableInput.value = "";
+  document.getElementById("csImportError").textContent = "";
+  document.getElementById("csImportModal").classList.add("open");
+
+  if (!Array.isArray(window.CS_CARD_IMPORT_DATA) || window.CS_CARD_IMPORT_DATA.length === 0) {
+    document.getElementById("csImportNoData").style.display = "block";
+    document.getElementById("csImportExecuteBtn").disabled = true;
+    document.getElementById("csImportError").textContent = "CS-CARDデータが見つかりませんでした";
+    return;
+  }
+
+  renderCsImportPreview(window.CS_CARD_IMPORT_DATA);
+}
+
+function previewCsTableImport() {
+  const input = document.getElementById("csImportTableInput");
+  document.getElementById("csImportFileInput").value = "";
+  document.getElementById("csImportError").textContent = "";
+
+  const rows = parseCsTableText(input ? input.value : "");
+  if (!rows.length) {
+    document.getElementById("csImportPreview").style.display = "none";
+    document.getElementById("csImportNoData").style.display = "block";
+    document.getElementById("csImportExecuteBtn").disabled = true;
+    document.getElementById("csImportError").textContent = "貼り付け表から取込可能なデータが見つかりませんでした";
+    return;
+  }
+  renderCsImportPreview(rows);
+}
+
 function previewCsImport(input) {
   const file = input.files[0]; if (!file) return;
+  const tableInput = document.getElementById("csImportTableInput");
+  if (tableInput) tableInput.value = "";
   document.getElementById("csImportError").textContent = "";
   document.getElementById("csImportPreview").style.display = "none";
   document.getElementById("csImportNoData").style.display = "none";
@@ -867,56 +1167,7 @@ function previewCsImport(input) {
       let json;
       try { json = JSON.parse(e.target.result); }
       catch(err) { document.getElementById("csImportError").textContent = "JSONの形式が正しくありません: " + err.message; return; }
-      if (!Array.isArray(json)) json = [json];
-
-      csImportData = json.map(item => ({
-        // 基本情報
-        hospitalName:    String(item.hospitalName || "").trim(),
-        ward:            String(item.ward         || "").trim(),
-        startDate:       String(item.startDate    || "").trim(),
-        supportEndDate:  String(item.supportEndDate || "").trim(),
-        // 担当者
-        salesPerson:     String(item.salesPerson  || "").trim(),
-        csPerson:        String(item.csPerson     || "").trim(),
-        solPm:           String(item.solPm        || "").trim(),
-        // システム種別
-        systemType1:     String(item.systemType1  || "").trim(),
-        systemType2:     String(item.systemType2  || "").trim(),
-        // 機器フラグ（boolean）
-        hasBedside:      Boolean(item.hasBedside),
-        hasBedNavi:      Boolean(item.hasBedNavi),
-        hasNemiri:       Boolean(item.hasNemiri),
-        hasRisha:        Boolean(item.hasRisha),
-        hasVital:        Boolean(item.hasVital),
-        hasEhr:          Boolean(item.hasEhr),
-        hasNurse:        Boolean(item.hasNurse),
-        hasNcNotify:     Boolean(item.hasNcNotify),
-        // 運用情報
-        moveOp:          String(item.moveOp       || "").trim(),
-        bedNumStaff:     String(item.bedNumStaff  || "").trim(),
-        bedMoveStaff:    String(item.bedMoveStaff || "").trim(),
-        // ステータス
-        state:           String(item.state        || "正常").trim(),
-        taskStatus:      String(item.taskStatus   || "正常").trim(),
-        memo:            String(item.memo         || "").trim(),
-        // 訪問履歴
-        visits:          Array.isArray(item.visits) ? item.visits : [],
-        createdAt:       new Date().toISOString(),
-      })).filter(d => d.hospitalName);
-
-      if (csImportData.length === 0) { document.getElementById("csImportNoData").style.display = "block"; return; }
-
-      document.getElementById("csImportCount").textContent = csImportData.length;
-      document.getElementById("csImportPreviewBody").innerHTML = csImportData.map(d => `
-        <tr style="border-bottom:1px solid #f0f2f5;">
-          <td style="padding:7px 10px;font-weight:600;">${escapeHtml(d.hospitalName)}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.salesPerson || "―")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.csPerson || "―")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.startDate || "未設定")}</td>
-          <td style="padding:7px 10px;">${escapeHtml(d.systemType1 || "―")}</td>
-        </tr>`).join("");
-      document.getElementById("csImportPreview").style.display = "block";
-      document.getElementById("csImportExecuteBtn").disabled = false;
+      renderCsImportPreview(json);
     } catch(err) {
       console.error(err);
       document.getElementById("csImportError").textContent = "読み込みに失敗しました: " + err.message;
@@ -929,14 +1180,27 @@ async function executeCsImport() {
   if (!csImportData.length) return;
   const btn = document.getElementById("csImportExecuteBtn");
   btn.disabled = true; btn.textContent = "取込中...";
-  let ok = 0, ng = 0;
+  let added = 0, updated = 0, ng = 0;
   for (const item of csImportData) {
-    try { await db.collection("cs_projects").add(item); ok++; }
+    try {
+      const snapshot = await db.collection("cs_projects")
+        .where("hospitalName", "==", item.hospitalName)
+        .get();
+      const existing = snapshot.docs.find(doc => (doc.data() || {}).type === "cs") || snapshot.docs[0];
+      if (existing) {
+        await db.collection("cs_projects").doc(existing.id).set(item, { merge: true });
+        updated++;
+      } else {
+        await db.collection("cs_projects").add(item);
+        added++;
+      }
+    }
     catch(err) { console.error(err); ng++; }
   }
   btn.textContent = "取込実行";
   closeCsImportModal();
-  showToast(ng === 0 ? `✅ ${ok}件取込みました` : `⚠️ ${ok}件成功、${ng}件失敗`, ng === 0 ? "success" : "error");
+  const ok = added + updated;
+  showToast(ng === 0 ? `✅ ${added}件追加、${updated}件上書きしました` : `⚠️ ${ok}件成功、${ng}件失敗`, ng === 0 ? "success" : "error");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
