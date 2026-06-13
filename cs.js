@@ -304,11 +304,33 @@ function getCsHealth(p) {
   const activePhases = currentIndex >= 0 ? CS_HEALTH_PHASES.slice(0, currentIndex + 1) : [];
   const activeWeight = activePhases.reduce((sum, phase) => sum + phase.weight, 0);
   const weightedScore = activePhases.reduce((sum, phase) => sum + values[phase.key] * phase.weight, 0);
-  const score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
-  if (score >= 85) return { score, label: "良好", className: "cs-status-green", values, currentIndex };
-  if (score >= 70) return { score, label: "注意", className: "cs-status-yellow", values, currentIndex };
-  if (score >= 50) return { score, label: "リスク", className: "cs-status-orange", values, currentIndex };
-  return { score, label: "重大リスク", className: "cs-status-red", values, currentIndex };
+  let score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
+  const dashboard = p.csDashboard;
+  if (dashboard) {
+    const ratio = (a, b) => {
+      const x = Number(a), y = Number(b);
+      return Number.isFinite(x) && Number.isFinite(y) && y > 0 ? x / y * 100 : null;
+    };
+    const usage = dashboard.usage || {}, activity = dashboard.csActivity || {}, kpi = dashboard.kpi || {}, renewal = dashboard.renewal || {};
+    const usageRates = [ratio(usage.activeUsers, usage.targetUsers), ratio(usage.usedFeatures, usage.totalFeatures), ratio(usage.connectedDevices, usage.installedDevices)].filter(v => v !== null);
+    const systemUsage = usageRates.length ? usageRates.reduce((a,b) => a+b, 0) / usageRates.length : null;
+    const latestDate = visits.map(v => v.endDate || v.startDate).filter(Boolean).sort().at(-1) || activity.lastVisitDate || "";
+    const elapsed = latestDate ? Math.ceil((new Date() - new Date(latestDate)) / 86400000) : null;
+    const kpiRate = ratio(kpi.current, kpi.target);
+    const unresolved = activity.unresolvedIssues === "" || activity.unresolvedIssues === undefined ? null : Number(activity.unresolvedIssues);
+    const renewalDays = renewal.renewalDate ? Math.ceil((new Date(renewal.renewalDate) - new Date()) / 86400000) : null;
+    const parts = [];
+    if (systemUsage !== null) parts.push([Math.min(100, systemUsage) * .4, 40]);
+    if (elapsed !== null) parts.push([elapsed <= 30 ? 20 : elapsed <= 60 ? 10 : 0, 20]);
+    if (kpiRate !== null) parts.push([Math.min(100, kpiRate) * .2, 20]);
+    if (Number.isFinite(unresolved)) parts.push([unresolved === 0 ? 10 : unresolved <= 2 ? 5 : 0, 10]);
+    if (renewalDays !== null) parts.push([renewalDays > 90 ? 10 : renewalDays > 30 ? 5 : 0, 10]);
+    const max = parts.reduce((sum, row) => sum + row[1], 0);
+    if (max) score = Math.round(parts.reduce((sum, row) => sum + row[0], 0) / max * 100);
+  }
+  if (score >= 80) return { score, label: "良好", className: "cs-status-green", values, currentIndex };
+  if (score >= 60) return { score, label: "注意", className: "cs-status-yellow", values, currentIndex };
+  return { score, label: "リスク", className: "cs-status-red", values, currentIndex };
 }
 
 function getCsHealthActions(values, currentIndex) {

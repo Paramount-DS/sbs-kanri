@@ -28,30 +28,27 @@
   </div>
 </header>
 
-<main id="csDashboardRoot" class="dashboard-shell">
-  <aside class="dashboard-details">
-    <div class="dashboard-section-heading"><span>基本情報</span></div>
-    <table class="dashboard-detail-table" id="dashboardDetailTable"></table>
-  </aside>
-
-  <section class="dashboard-main">
-    <div class="dashboard-summary" id="dashboardSummary"></div>
-    <div class="dashboard-grid">
-      <section class="dashboard-panel dashboard-score-panel">
-        <div class="dashboard-panel-heading"><h2>フェーズスコア</h2><span>タスク別最新達成度の平均</span></div>
-        <div id="dashboardPhaseScores"></div>
-      </section>
-      <section class="dashboard-panel dashboard-trend-panel">
-        <div class="dashboard-panel-heading"><h2>稼働 / 進捗傾向</h2><span>訪問記録に基づく推移</span></div>
-        <div id="dashboardTrend"></div>
-      </section>
-      <section class="dashboard-panel dashboard-visits-panel">
-        <div class="dashboard-panel-heading"><h2>訪問履歴</h2><span id="dashboardVisitCount"></span></div>
-        <div id="dashboardVisits"></div>
-      </section>
-    </div>
-  </section>
+<main id="csDashboardRoot" class="dashboard-page">
+  <div class="dashboard-summary" id="dashboardSummary"></div>
+  <section class="dashboard-phase-panel" id="dashboardPhasePanel"></section>
+  <section class="dashboard-category-grid" id="dashboardCategoryGrid"></section>
 </main>
+
+<div id="dashboardEditModal" class="modal-overlay dashboard-edit-modal">
+  <div class="modal-box dashboard-modal-box">
+    <div class="cs-modal-header">
+      <h2 id="dashboardModalTitle">Input</h2>
+      <button type="button" class="btn-modal-close" onclick="closeDashboardModal()" style="color:white;">✕</button>
+    </div>
+    <form id="dashboardEditForm">
+      <div class="modal-body" id="dashboardModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeDashboardModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
