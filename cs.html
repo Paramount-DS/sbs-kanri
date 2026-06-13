@@ -36,9 +36,11 @@
     <span class="cs-phase-arrow">-</span>
     <span class="cs-phase-item"><strong>活用促進</strong><small>Engagement</small></span>
     <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>成果創出</strong><small>Outcome</small></span>
+    <span class="cs-phase-item"><strong>成果創出</strong><small>Outcome/ROI</small></span>
     <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>拡大/事例創出</strong><small>ROI/Expansion</small></span>
+    <span class="cs-phase-item"><strong>拡大</strong><small>Expansion</small></span>
+    <span class="cs-phase-arrow">-</span>
+    <span class="cs-phase-item"><strong>共創</strong><small>Advocacy</small></span>
   </div>
 </div>
 
@@ -196,15 +198,21 @@
         <input type="hidden" id="visitProjectId"/>
         <input type="hidden" id="visitEditIndex" value="-1"/>
         <div class="form-group">
-          <label class="form-label">ステータス</label>
-          <select id="visitStatus" class="status-select-cs">
+          <label class="form-label">現在のフェーズ / 次の訪問ステータス</label>
+          <select id="visitStatus" class="status-select-cs" onchange="updateVisitTaskOptions()">
             <option value="支援計画">支援計画/Deployment</option>
             <option value="定着">定着/Adoption</option>
             <option value="活用促進">活用促進/Engagement</option>
-            <option value="成果創出">成果創出/Outcome</option>
-            <option value="拡大/事例創出">拡大/事例創出 / ROI/Expansion</option>
+            <option value="成果創出">成果創出/Outcome/ROI</option>
+            <option value="拡大">拡大/Expansion</option>
+            <option value="共創">共創/Advocacy</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">フェーズ項目</label>
+          <select id="visitTaskItem" class="status-select-cs" onchange="updateVisitTaskDetail()"></select>
+        </div>
+        <div id="visitTaskDetail" class="visit-task-detail"></div>
         <div class="form-group">
           <label class="form-label">達成度 <strong id="visitScoreValue">0</strong></label>
           <input type="range" id="visitScore" class="visit-score-range" min="0" max="100" value="0" oninput="document.getElementById('visitScoreValue').textContent=this.value"/>

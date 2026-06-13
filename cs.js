@@ -62,7 +62,7 @@ const CS_PHASES = [
   {
     key: "成果創出",
     label: "成果創出",
-    goal: "ROI証明",
+    goal: "Outcome/ROI",
     items: [
       { item:"導入効果測定", content:"導入前後比較分析", effect:"効果の可視化" },
       { item:"KPI評価", content:"設定した指標の達成確認", effect:"成果確認" },
@@ -86,8 +86,8 @@ const CS_PHASES = [
     ],
   },
   {
-    key: "事例創出",
-    label: "事例創出",
+    key: "共創",
+    label: "共創",
     goal: "共創・事例創出",
     items: [
       { item:"ユーザー会参加", content:"ユーザー同士の交流機会提供", effect:"ロイヤルティ向上" },
@@ -216,10 +216,11 @@ function getVisitStatusLabel(status) {
     "支援計画": "支援計画/Deployment",
     "定着": "定着/Adoption",
     "活用促進": "活用促進/Engagement",
-    "成果創出": "成果創出/Outcome",
-    "拡大": "拡大/事例創出 / ROI/Expansion",
-    "事例創出": "拡大/事例創出 / ROI/Expansion",
-    "拡大/事例創出": "拡大/事例創出 / ROI/Expansion",
+    "成果創出": "成果創出/Outcome/ROI",
+    "拡大": "拡大/Expansion",
+    "事例創出": "共創/Advocacy",
+    "共創": "共創/Advocacy",
+    "拡大/事例創出": "拡大/Expansion",
   };
   if (status === "onboarding" || status === "OBD") return labels["支援計画"];
   if (status === "support" || status === "SUP" || status === "活用") return labels["活用促進"];
@@ -229,12 +230,13 @@ function getVisitStatusLabel(status) {
 function normalizeVisitStatus(status) {
   if (status === "onboarding" || status === "OBD") return "支援計画";
   if (status === "support" || status === "SUP" || status === "活用") return "活用促進";
-  if (status === "拡大" || status === "事例創出") return "拡大/事例創出";
+  if (status === "事例創出") return "共創";
+  if (status === "拡大/事例創出") return "拡大";
   return status || "支援計画";
 }
 
 function isSupportSideStatus(status) {
-  return ["support", "SUP", "活用", "活用促進", "成果創出", "拡大", "事例創出"].includes(status);
+  return ["support", "SUP", "活用", "活用促進", "成果創出", "拡大", "事例創出", "共創"].includes(status);
 }
 
 function getLatestVisitDateText(p) {
@@ -253,16 +255,18 @@ function getCsState(p) {
 }
 
 const CS_HEALTH_PHASES = [
-  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 20 },
-  { key: "定着", label: "定着", english: "Adoption", weight: 30 },
+  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 15 },
+  { key: "定着", label: "定着", english: "Adoption", weight: 20 },
   { key: "活用促進", label: "活用促進", english: "Engagement", weight: 20 },
-  { key: "成果創出", label: "成果創出", english: "Outcome", weight: 20 },
-  { key: "拡大/事例創出", label: "拡大/事例創出", english: "ROI/Expansion", weight: 10 },
+  { key: "成果創出", label: "成果創出", english: "Outcome/ROI", weight: 20 },
+  { key: "拡大", label: "拡大", english: "Expansion", weight: 15 },
+  { key: "共創", label: "共創", english: "Advocacy", weight: 10 },
 ];
 
 function normalizeHealthPhase(status) {
   const normalized = normalizeVisitStatus(status);
-  if (normalized === "拡大" || normalized === "事例創出") return "拡大/事例創出";
+  if (normalized === "事例創出") return "共創";
+  if (normalized === "拡大/事例創出") return "拡大";
   return normalized;
 }
 
@@ -273,11 +277,18 @@ function normalizeHealthModel(value) {
 
 function getCsHealthValues(p) {
   const values = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, 0]));
+  const taskScores = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, new Map()]));
   (p.visits || []).forEach(visit => {
     const key = normalizeHealthPhase(visit.status);
     if (!(key in values)) return;
     const score = Number(visit.score);
-    values[key] = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0;
+    const taskItem = visit.taskItem || getCsPhase(key).items[0]?.item || "";
+    taskScores[key].set(taskItem, Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0);
+  });
+  CS_HEALTH_PHASES.forEach(phase => {
+    const definition = getCsPhase(phase.key);
+    const total = definition.items.reduce((sum, item) => sum + (taskScores[phase.key].get(item.item) || 0), 0);
+    values[phase.key] = definition.items.length ? Math.round(total / definition.items.length) : 0;
   });
   return values;
 }
@@ -306,8 +317,9 @@ function getCsHealthActions(values, currentIndex) {
   if (currentIndex >= 0 && values["支援計画"] < 70) actions.push("Deployment：未導入範囲・未教育者を確認し、初期稼働条件を再整理する。");
   if (currentIndex >= 1 && values["定着"] < 70) actions.push("Adoption：利用ログを確認し、未活用機能・未利用部署への再教育を実施する。");
   if (currentIndex >= 2 && values["活用促進"] < 70) actions.push("Engagement：定例会・管理者面談を設定し、現場課題を改善アクションに落とす。");
-  if (currentIndex >= 3 && values["成果創出"] < 70) actions.push("Outcome：成果指標の現状値・目標値・改善結果を再設定する。");
-  if (currentIndex >= 4 && values["拡大/事例創出"] < 70) actions.push("ROI / Expansion：費用対効果または拡大提案に必要な根拠データを整理する。");
+  if (currentIndex >= 3 && values["成果創出"] < 70) actions.push("Outcome/ROI：成果指標と費用対効果の根拠を整理する。");
+  if (currentIndex >= 4 && values["拡大"] < 70) actions.push("Expansion：更新・追加導入・他部署展開の提案条件を整理する。");
+  if (currentIndex >= 5 && values["共創"] < 70) actions.push("Advocacy：事例化・紹介・共同プロジェクトの候補を整理する。");
   if (!actions.length) actions.push("全体状態は良好。更新・追加導入・他部署展開の提案タイミング。");
   return actions;
 }
@@ -354,7 +366,7 @@ function getCsPhase(key) {
 
 function getCurrentCsPhase(p) {
   const status = normalizeVisitStatus(getLatestVisit(p)?.status);
-  return getCsPhase(status === "拡大/事例創出" ? "拡大" : status);
+  return getCsPhase(status);
 }
 
 function getCsTaskSelection(p) {
@@ -420,6 +432,7 @@ function createCsCard(p) {
           <button class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
         </div>
+        ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(v.taskItem)}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
         ${v.freeText ? `<div class="cs-visit-text">${escapeHtml(v.freeText)}</div>` : ""}
       </div>`;
   }).join("");
@@ -450,10 +463,9 @@ function createCsCard(p) {
              ${visitHtml}
            </div>`
         : `<div class="last-visit-none last-visit-indicator">訪問記録がありません</div>`}
-      ${createCsTaskSection(p)}
       <div class="cs-card-actions">
         <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">次の訪問を追加</button>
-        <button class="btn-cs-detail" onclick="openCsDetailModal('${p.id}')">詳細</button>
+        <button class="btn-cs-detail" onclick="location.href='cs-dashboard.html?id=${encodeURIComponent(p.id)}'">詳細</button>
         <button class="btn-cs-edit" onclick="openCsEditModal('${p.id}')">編集</button>
         <button class="btn-cs-delete" onclick="openCsDeleteModal('${p.id}')">削除</button>
       </div>
@@ -748,6 +760,24 @@ async function saveCsProject(e) {
 // =============================================
 // 訪問追加モーダル
 // =============================================
+function updateVisitTaskOptions(selectedItem = "") {
+  const status = document.getElementById("visitStatus").value;
+  const phase = getCsPhase(normalizeVisitStatus(status));
+  const select = document.getElementById("visitTaskItem");
+  select.innerHTML = phase.items.map(item => `<option value="${escapeHtml(item.item)}">${escapeHtml(item.item)}</option>`).join("");
+  if (selectedItem && phase.items.some(item => item.item === selectedItem)) select.value = selectedItem;
+  updateVisitTaskDetail();
+}
+
+function updateVisitTaskDetail() {
+  const phase = getCsPhase(normalizeVisitStatus(document.getElementById("visitStatus").value));
+  const selected = phase.items.find(item => item.item === document.getElementById("visitTaskItem").value) || phase.items[0];
+  document.getElementById("visitTaskDetail").innerHTML = selected ? `
+    <div><span>ゴール</span><strong>${escapeHtml(phase.goal)}</strong></div>
+    <div><span>内容</span><p>${escapeHtml(selected.content)}</p></div>
+    <div><span>効果・結果</span><p>${escapeHtml(selected.effect)}</p></div>` : "";
+}
+
 function openVisitModal(projectId, editIndex = -1) {
   const p = allCsProjects.find(x => x.id === projectId);
   if (!p) return;
@@ -763,11 +793,15 @@ function openVisitModal(projectId, editIndex = -1) {
   document.getElementById("visitScoreValue").textContent = "0";
   if (targetVisit) {
     document.getElementById("visitStatus").value = normalizeVisitStatus(targetVisit.status);
+    updateVisitTaskOptions(targetVisit.taskItem || "");
     document.getElementById("visitStartDate").value = targetVisit.startDate || "";
     document.getElementById("visitEndDate").value = targetVisit.endDate || "";
     document.getElementById("visitFreeText").value = targetVisit.freeText || "";
     document.getElementById("visitScore").value = Number(targetVisit.score) || 0;
     document.getElementById("visitScoreValue").textContent = String(Number(targetVisit.score) || 0);
+  } else {
+    document.getElementById("visitStatus").value = normalizeVisitStatus(getLatestVisit(p)?.status || "支援計画");
+    updateVisitTaskOptions();
   }
   document.getElementById("visitModal").classList.add("open");
 }
@@ -785,11 +819,16 @@ async function saveVisit(e) {
 
   const visit = {
     status:    document.getElementById("visitStatus").value,
+    taskItem:  document.getElementById("visitTaskItem").value,
     score:     Math.max(0, Math.min(100, Number(document.getElementById("visitScore").value) || 0)),
     startDate: document.getElementById("visitStartDate").value,
     endDate:   document.getElementById("visitEndDate").value,
     freeText:  document.getElementById("visitFreeText").value.trim(),
   };
+  const selectedPhase = getCsPhase(normalizeVisitStatus(visit.status));
+  const selectedTask = selectedPhase.items.find(item => item.item === visit.taskItem);
+  visit.taskContent = selectedTask?.content || "";
+  visit.taskEffect = selectedTask?.effect || "";
 
   const updatedVisits = [...(p.visits || [])];
   if (editIndex >= 0) {
@@ -1204,8 +1243,10 @@ async function executeCsImport() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("csDashboardRoot")) return;
   initCs();
-  document.getElementById("csImportModal").addEventListener("click", (e) => {
+  const importModal = document.getElementById("csImportModal");
+  if (importModal) importModal.addEventListener("click", (e) => {
     if (e.target.id === "csImportModal") closeCsImportModal();
   });
 });

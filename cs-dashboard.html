@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="cs.css"/>
+  <link rel="stylesheet" href="cs-dashboard.css"/>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<header class="cs-app-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <img src="logo2.png" alt="Parasight" class="header-logo"/>
+      <span class="cs-branch-tag">CS DASHBOARD</span>
+      <strong id="dashboardHospitalName" class="dashboard-hospital-name">読み込み中...</strong>
+    </div>
+    <div class="cs-header-actions">
+      <a href="cs.html" class="btn-cs-list">カード</a>
+      <a href="cs-list.html" class="btn-cs-list">一覧</a>
+      <a href="index.html" class="btn-back-project">案件管理</a>
+    </div>
+  </div>
+</header>
+
+<main id="csDashboardRoot" class="dashboard-shell">
+  <aside class="dashboard-details">
+    <div class="dashboard-section-heading"><span>基本情報</span></div>
+    <table class="dashboard-detail-table" id="dashboardDetailTable"></table>
+  </aside>
+
+  <section class="dashboard-main">
+    <div class="dashboard-summary" id="dashboardSummary"></div>
+    <div class="dashboard-grid">
+      <section class="dashboard-panel dashboard-score-panel">
+        <div class="dashboard-panel-heading"><h2>フェーズスコア</h2><span>タスク別最新達成度の平均</span></div>
+        <div id="dashboardPhaseScores"></div>
+      </section>
+      <section class="dashboard-panel dashboard-trend-panel">
+        <div class="dashboard-panel-heading"><h2>稼働 / 進捗傾向</h2><span>訪問記録に基づく推移</span></div>
+        <div id="dashboardTrend"></div>
+      </section>
+      <section class="dashboard-panel dashboard-visits-panel">
+        <div class="dashboard-panel-heading"><h2>訪問履歴</h2><span id="dashboardVisitCount"></span></div>
+        <div id="dashboardVisits"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="firebase-config.js"></script>
+<script src="cs.js"></script>
+<script src="cs-dashboard.js"></script>
+</body>
+</html>

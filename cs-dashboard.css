@@ -1,0 +1,55 @@
+.dashboard-hospital-name { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.dashboard-shell { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); min-height: calc(100vh - 56px); background: #f5f6f8; }
+.dashboard-details { background: white; border-right: 1px solid #e1e4e9; padding: 18px; }
+.dashboard-section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.dashboard-section-heading span { color: #1e2330; font-size: 15px; font-weight: 800; }
+.dashboard-detail-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+.dashboard-detail-table th, .dashboard-detail-table td { padding: 8px 7px; border-bottom: 1px solid #eceef2; vertical-align: top; overflow-wrap: anywhere; }
+.dashboard-detail-table th { width: 40%; color: #697386; text-align: left; font-weight: 700; background: #fafbfc; }
+.dashboard-detail-table td { color: #202634; font-weight: 500; }
+.dashboard-main { padding: 18px; min-width: 0; }
+.dashboard-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.dashboard-summary-item { min-height: 72px; background: white; border: 1px solid #e1e4e9; border-radius: 7px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+.dashboard-summary-item span { color: #727c8f; font-size: 10px; font-weight: 700; }
+.dashboard-summary-item strong { color: #202634; font-size: 22px; line-height: 1; }
+.dashboard-summary-item em { color: #697386; font-size: 10px; font-style: normal; }
+.dashboard-summary-item.health-good strong { color: var(--cs-green); }
+.dashboard-summary-item.health-caution strong { color: var(--cs-yellow); }
+.dashboard-summary-item.health-risk strong { color: var(--cs-orange); }
+.dashboard-summary-item.health-critical strong { color: var(--cs-red); }
+.dashboard-grid { display: grid; grid-template-columns: minmax(300px, .9fr) minmax(360px, 1.1fr); gap: 12px; align-items: start; }
+.dashboard-panel { background: white; border: 1px solid #e1e4e9; border-radius: 7px; padding: 14px; min-width: 0; }
+.dashboard-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.dashboard-panel-heading h2 { margin: 0; color: #202634; font-size: 14px; }
+.dashboard-panel-heading span { color: #8a93a3; font-size: 9px; }
+.dashboard-visits-panel { grid-column: 1 / -1; }
+.dashboard-phase-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 36px; align-items: center; gap: 9px; margin-bottom: 9px; }
+.dashboard-phase-name strong, .dashboard-phase-name small { display: block; }
+.dashboard-phase-name strong { color: #343b49; font-size: 10px; }
+.dashboard-phase-name small { color: #8992a2; font-size: 9px; }
+.dashboard-progress-track { height: 9px; border-radius: 3px; background: #eef0f3; overflow: hidden; }
+.dashboard-progress-fill { height: 100%; background: #6c8ebf; border-radius: inherit; }
+.dashboard-phase-value { color: #343b49; font-size: 11px; font-weight: 800; text-align: right; }
+.dashboard-trend-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 12px; }
+.dashboard-trend-metric { background: #f7f8fa; border: 1px solid #e7e9ed; border-radius: 5px; padding: 8px; }
+.dashboard-trend-metric span, .dashboard-trend-metric strong { display: block; }
+.dashboard-trend-metric span { color: #828b9b; font-size: 9px; }
+.dashboard-trend-metric strong { margin-top: 3px; color: #2c3340; font-size: 14px; }
+.dashboard-chart { width: 100%; height: 180px; display: block; background: #fbfcfd; border: 1px solid #eceef2; border-radius: 5px; }
+.dashboard-chart-grid { stroke: #e8ebef; stroke-width: 1; }
+.dashboard-chart-line { fill: none; stroke: #6c8ebf; stroke-width: 3; }
+.dashboard-chart-area { fill: rgba(108,142,191,.12); }
+.dashboard-chart-point { fill: #fff; stroke: #6c8ebf; stroke-width: 2; }
+.dashboard-visit-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px; }
+.dashboard-visit-table th, .dashboard-visit-table td { padding: 8px; border-bottom: 1px solid #eceef2; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.dashboard-visit-table th { color: #697386; background: #f8f9fb; font-weight: 800; }
+.dashboard-visit-table td { color: #343b49; }
+.dashboard-empty { padding: 28px; color: #8b94a4; text-align: center; font-size: 12px; }
+@media (max-width: 900px) {
+  .dashboard-shell { grid-template-columns: 1fr; }
+  .dashboard-details { border-right: 0; border-bottom: 1px solid #e1e4e9; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-visits-panel { grid-column: auto; }
+  .dashboard-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-hospital-name { display: none; }
+}
