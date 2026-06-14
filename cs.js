@@ -279,20 +279,28 @@ function normalizeHealthModel(value) {
 
 function getCsHealthValues(p) {
   const values = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, 0]));
-  const taskScores = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, new Map()]));
-  (p.visits || []).forEach(visit => {
+  const latestScores = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, null]));
+  (p.visits || []).forEach((visit,index) => {
     const key = normalizeHealthPhase(visit.status);
     if (!(key in values)) return;
     const score = Number(visit.score);
-    const taskItem = visit.taskItem || getCsPhase(key).items[0]?.item || "";
-    taskScores[key].set(taskItem, Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0);
+    const date = visit.endDate || visit.startDate || "";
+    const current = latestScores[key];
+    if (!current || date > current.date || (date === current.date && index > current.index)) {
+      latestScores[key] = { date, index, score:Number.isFinite(score) ? Math.max(0,Math.min(100,score)) : 0 };
+    }
   });
   CS_HEALTH_PHASES.forEach(phase => {
-    const definition = getCsPhase(phase.key);
-    const total = definition.items.reduce((sum, item) => sum + (taskScores[phase.key].get(item.item) || 0), 0);
-    values[phase.key] = definition.items.length ? Math.round(total / definition.items.length) : 0;
+    values[phase.key] = Math.round(latestScores[phase.key]?.score || 0);
   });
   return values;
+}
+
+function getCsStateGroup(p) {
+  const state=String(getCsState(p)||"").trim();
+  if(state.startsWith("問題あり")) return "problem";
+  if(state.startsWith("課題あり")) return "issue";
+  return "normal";
 }
 
 function getCsHealth(p) {
@@ -306,30 +314,7 @@ function getCsHealth(p) {
   const activePhases = currentIndex >= 0 ? CS_HEALTH_PHASES.slice(0, currentIndex + 1) : [];
   const activeWeight = activePhases.reduce((sum, phase) => sum + phase.weight, 0);
   const weightedScore = activePhases.reduce((sum, phase) => sum + values[phase.key] * phase.weight, 0);
-  let score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
-  const dashboard = p.csDashboard;
-  if (dashboard) {
-    const ratio = (a, b) => {
-      const x = Number(a), y = Number(b);
-      return Number.isFinite(x) && Number.isFinite(y) && y > 0 ? x / y * 100 : null;
-    };
-    const usage = dashboard.usage || {}, activity = dashboard.csActivity || {}, kpi = dashboard.kpi || {}, renewal = dashboard.renewal || {};
-    const usageRates = [ratio(usage.activeUsers, usage.targetUsers), ratio(usage.usedFeatures, usage.totalFeatures), ratio(usage.connectedDevices, usage.installedDevices)].filter(v => v !== null);
-    const systemUsage = usageRates.length ? usageRates.reduce((a,b) => a+b, 0) / usageRates.length : null;
-    const latestDate = visits.map(v => v.endDate || v.startDate).filter(Boolean).sort().at(-1) || activity.lastVisitDate || "";
-    const elapsed = latestDate ? Math.ceil((new Date() - new Date(latestDate)) / 86400000) : null;
-    const kpiRate = ratio(kpi.current, kpi.target);
-    const unresolved = activity.unresolvedIssues === "" || activity.unresolvedIssues === undefined ? null : Number(activity.unresolvedIssues);
-    const renewalDays = renewal.renewalDate ? Math.ceil((new Date(renewal.renewalDate) - new Date()) / 86400000) : null;
-    const parts = [];
-    if (systemUsage !== null) parts.push([Math.min(100, systemUsage) * .4, 40]);
-    if (elapsed !== null) parts.push([elapsed <= 30 ? 20 : elapsed <= 60 ? 10 : 0, 20]);
-    if (kpiRate !== null) parts.push([Math.min(100, kpiRate) * .2, 20]);
-    if (Number.isFinite(unresolved)) parts.push([unresolved === 0 ? 10 : unresolved <= 2 ? 5 : 0, 10]);
-    if (renewalDays !== null) parts.push([renewalDays > 90 ? 10 : renewalDays > 30 ? 5 : 0, 10]);
-    const max = parts.reduce((sum, row) => sum + row[1], 0);
-    if (max) score = Math.round(parts.reduce((sum, row) => sum + row[0], 0) / max * 100);
-  }
+  const score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
   if (score >= 80) return { score, label: "良好", className: "cs-status-green", values, currentIndex };
   if (score >= 60) return { score, label: "注意", className: "cs-status-yellow", values, currentIndex };
   return { score, label: "リスク", className: "cs-status-red", values, currentIndex };
@@ -450,8 +435,8 @@ function createCsCard(p) {
             ${escapeHtml(getVisitStatusLabel(v.status))}
           </span>
           <span class="cs-visit-score">達成度 ${Number(v.score) || 0}</span>
-          <button class="btn-cs-visit-edit" onclick="openVisitModal('${p.id}', ${realIdx})">編集</button>
-          <button class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
+          <button type="button" class="btn-cs-visit-edit" onclick="editCsVisit(event,'${p.id}',${realIdx})">編集</button>
+          <button type="button" class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
         </div>
         ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(v.taskItem)}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
@@ -505,11 +490,14 @@ function renderCsProjects() {
   let filtered = allCsProjects.filter(p => {
     const matchName   = (p.hospitalName || "").toLowerCase().includes(csSearchQuery.toLowerCase());
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    return matchName && matchPerson;
+    const matchState = !csFilterState || getCsStateGroup(p) === csFilterState;
+    const matchStatus = !csFilterStatus || normalizeVisitStatus(getLatestVisit(p)?.status) === csFilterStatus;
+    return matchName && matchPerson && matchState && matchStatus;
   });
 
+  const statePri={normal:0,problem:1,issue:2};
   const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
-  filtered.sort((a, b) => (pri[getCsHealth(a).className] ?? 4) - (pri[getCsHealth(b).className] ?? 4));
+  filtered.sort((a,b)=>statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)] || (pri[getCsHealth(a).className]??4)-(pri[getCsHealth(b).className]??4));
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
 
@@ -549,14 +537,17 @@ function renderCsList() {
     const name = (p.hospitalName || "").toLowerCase();
     const matchName = name.includes(q);
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchState = !csFilterState || String(getCsState(p) || "").trim() === csFilterState;
+    const matchState = !csFilterState || getCsStateGroup(p) === csFilterState;
     const latestStatus = normalizeVisitStatus(getLatestVisit(p)?.status);
     const matchStatus = !csFilterStatus || latestStatus === csFilterStatus;
     return matchName && matchPerson && matchState && matchStatus;
   });
 
+  const statePri={normal:0,problem:1,issue:2};
   const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
   filtered.sort((a, b) => {
+    const stateDiff=statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)];
+    if(stateDiff!==0) return stateDiff;
     const pa = pri[getCsHealth(a).className] ?? 4;
     const pb = pri[getCsHealth(b).className] ?? 4;
     if (pa !== pb) return pa - pb;
@@ -613,7 +604,7 @@ function initCs() {
 
   const stateSel = document.getElementById("csStateFilter");
   if (stateSel) {
-    stateSel.innerHTML = `<option value="">全状態</option>` + CS_STATE_OPTIONS.map(state => `<option value="${escapeHtml(state)}">${escapeHtml(state)}</option>`).join("");
+    stateSel.innerHTML = `<option value="">全状態</option><option value="normal">正常</option><option value="problem">問題</option><option value="issue">課題</option>`;
     stateSel.addEventListener("change", e => {
       csFilterState = e.target.value;
       renderCsView();
@@ -849,6 +840,12 @@ function openVisitModal(projectId, editIndex = -1) {
     updateVisitTaskOptions();
   }
   document.getElementById("visitModal").classList.add("open");
+}
+
+function editCsVisit(event,projectId,index){
+  event?.preventDefault();
+  event?.stopPropagation();
+  openVisitModal(projectId,index);
 }
 
 function closeVisitModal() {

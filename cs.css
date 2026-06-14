@@ -66,7 +66,7 @@
   padding: 0 20px;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 120;
   border-bottom: 2px solid var(--cs-primary-dk);
   box-shadow: 0 2px 8px rgba(248,169,196,.18);
 }
@@ -103,7 +103,7 @@
 .cs-red .cs-stat-num    { color: var(--cs-red); }
 
 /* CS検索バー */
-.cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; }
+.cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; position: sticky; top: 56px; z-index: 110; box-shadow: 0 2px 6px rgba(42,48,60,.08); }
 .cs-search-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 /* CSメイン */
