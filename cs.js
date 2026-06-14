@@ -103,6 +103,8 @@ const CS_PHASES = [
 let allCsProjects = [];
 let csSearchQuery = "";
 let csFilterPerson = "";
+let csFilterState = "";
+let csFilterStatus = "";
 let pendingCsDeleteId = null;
 
 // =============================================
@@ -350,11 +352,12 @@ function createCsHealthSection(p) {
   const health = getCsHealth(p);
   const actions = getCsHealthActions(health.values, health.currentIndex);
   const healthModel = normalizeHealthModel(p.healthModel || p.systemType1);
+  const currentStatus = getVisitStatusLabel(getLatestVisit(p)?.status);
   return `
     <div class="cs-health-section" data-health-id="${p.id}">
       <div class="cs-health-header">
-        <span class="cs-health-title">ヘルススコア</span>
-        <span class="cs-health-result ${health.className}"><strong>${health.score}</strong>${health.label}</span>
+        <div class="cs-health-status"><span>ステータス</span><strong>${escapeHtml(currentStatus)}</strong></div>
+        <div class="cs-health-score"><span>ヘルススコア</span><span class="cs-health-result ${health.className}"><strong>${health.score}</strong>${health.label}</span></div>
       </div>
       <div class="cs-health-settings">
         <label>モデル<select data-health-setting="model" onchange="updateCsHealthSettings('${p.id}')">
@@ -372,13 +375,10 @@ function createCsHealthSection(p) {
           <option value="quality"${p.healthOutcomeType === "quality" ? " selected" : ""}>質の改善</option>
         </select></label>
       </div>
-      <div class="cs-health-scores">
-        ${CS_HEALTH_PHASES.map((phase, index) => `<div class="cs-health-score-item${index > (health.currentIndex ?? -1) ? " is-future" : ""}"><span>${phase.english}</span><strong>${health.values[phase.key]}</strong></div>`).join("")}
-      </div>
-      <div class="cs-health-actions">
-        <span>CSアクション</span>
-        ${actions.map(action => `<p>${escapeHtml(action)}</p>`).join("")}
-      </div>
+      <details class="cs-health-actions">
+        <summary>CSアクション</summary>
+        <div>${actions.map(action => `<p>${escapeHtml(action)}</p>`).join("")}</div>
+      </details>
     </div>`;
 }
 
@@ -466,25 +466,25 @@ function createCsCard(p) {
   return `
     <div class="cs-card ${colorClass}" data-id="${p.id}">
       ${showEos ? `<span class="eos-badge">EOS</span>` : ""}
-      <div>
-        <div class="cs-card-title">${escapeHtml(p.hospitalName)}${duplicateBadge}</div>
-        <div class="cs-card-sub">
-          <span class="cs-meta-tag">📅 ${startFmt}</span>
-          ${p.csPerson ? `<span class="cs-meta-tag">👤 ${escapeHtml(p.csPerson)}</span>` : ""}
-          ${p.ward ? `<span class="cs-meta-tag">🏥 ${escapeHtml(p.ward)}</span>` : ""}
+      <div class="cs-card-head-grid">
+        <div class="cs-card-identity">
+          <div class="cs-card-title">${escapeHtml(p.hospitalName)}${duplicateBadge}</div>
+          <div class="cs-card-sub">
+            <span class="cs-meta-tag cs-meta-date">稼働 ${startFmt}</span>
+            ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">担当 ${escapeHtml(p.csPerson)}</span>` : ""}
+          </div>
         </div>
+        <label class="cs-card-state-field"><span>状態</span>${createCsStateSelect(p)}</label>
       </div>
-      <div class="cs-card-state-row"><span class="cs-visits-label">状態</span>${createCsStateSelect(p)}</div>
       ${products.length ? `<div class="cs-products">${products.map(pr => `<span class="cs-product-badge">${pr}</span>`).join("")}</div>` : ""}
-      ${p.memo ? `<div class="cs-card-memo">${escapeHtml(p.memo)}</div>` : ""}
       ${createCsHealthSection(p)}
       <div class="${lastVisit.cls} last-visit-indicator">${lastVisit.text}</div>
       ${visits.length
-        ? `<div class="cs-visits-section">
-             <span class="cs-visits-label">訪問履歴（${visits.length}件）${visits.length > 3 ? " ※直近3件" : ""}</span>
+        ? `<details class="cs-visits-section">
+             <summary class="cs-visits-label">訪問履歴（${visits.length}件）</summary>
              ${visitHtml}
-           </div>`
-        : `<div class="last-visit-none last-visit-indicator">訪問記録がありません</div>`}
+           </details>`
+        : `<div class="cs-visits-empty">訪問履歴（0件）</div>`}
       <div class="cs-card-actions">
         <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">次の訪問を追加</button>
         <button class="btn-cs-detail" onclick="location.href='cs-dashboard.html?id=${encodeURIComponent(p.id)}'">詳細</button>
@@ -527,8 +527,10 @@ function createCsListRow(p) {
   const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
   const health = getCsHealth(p);
-  return `<tr>
-    <td><span class="cs-list-state">${escapeHtml(getCsState(p))}</span></td>
+  const state = String(getCsState(p) || "").trim() || "正常";
+  const alertClass = state !== "正常" ? " cs-list-row-alert" : "";
+  return `<tr class="${alertClass.trim()}">
+    <td><span class="cs-list-state">${escapeHtml(state)}</span></td>
     <td class="cs-list-hospital" onclick="openCsDetailModal('${p.id}')">${escapeHtml(p.hospitalName || "")}</td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
@@ -547,7 +549,10 @@ function renderCsList() {
     const name = (p.hospitalName || "").toLowerCase();
     const matchName = name.includes(q);
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    return matchName && matchPerson;
+    const matchState = !csFilterState || String(getCsState(p) || "").trim() === csFilterState;
+    const latestStatus = normalizeVisitStatus(getLatestVisit(p)?.status);
+    const matchStatus = !csFilterStatus || latestStatus === csFilterStatus;
+    return matchName && matchPerson && matchState && matchStatus;
   });
 
   const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
@@ -602,6 +607,24 @@ function initCs() {
     updateCsStaffFilter();
     staffSel.addEventListener("change", e => {
       csFilterPerson = e.target.value;
+      renderCsView();
+    });
+  }
+
+  const stateSel = document.getElementById("csStateFilter");
+  if (stateSel) {
+    stateSel.innerHTML = `<option value="">全状態</option>` + CS_STATE_OPTIONS.map(state => `<option value="${escapeHtml(state)}">${escapeHtml(state)}</option>`).join("");
+    stateSel.addEventListener("change", e => {
+      csFilterState = e.target.value;
+      renderCsView();
+    });
+  }
+
+  const statusSel = document.getElementById("csStatusFilter");
+  if (statusSel) {
+    statusSel.innerHTML = `<option value="">全CSステータス</option>` + CS_HEALTH_PHASES.map(phase => `<option value="${escapeHtml(phase.key)}">${escapeHtml(phase.label)} / ${escapeHtml(phase.english)}</option>`).join("");
+    statusSel.addEventListener("change", e => {
+      csFilterStatus = e.target.value;
       renderCsView();
     });
   }

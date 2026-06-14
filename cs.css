@@ -187,8 +187,13 @@
 
 /* ヘルススコア */
 .cs-health-section { border: 1px solid #dfe3ea; background: rgba(255,255,255,.88); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 9px; }
-.cs-health-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cs-health-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; }
 .cs-health-title { font-size: 12px; font-weight: 800; color: #3a4252; }
+.cs-health-status, .cs-health-score { min-width: 0; }
+.cs-health-status > span, .cs-health-score > span:first-child { display: block; margin-bottom: 4px; color: #596579; font-size: 9px; font-weight: 700; }
+.cs-health-status > strong { display: block; color: #252c38; font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
+.cs-health-score { display: grid; grid-template-columns: auto auto; align-items: center; gap: 8px; }
+.cs-health-score > span:first-child { margin: 0; white-space: nowrap; }
 .cs-health-result { display: inline-flex; align-items: baseline; gap: 5px; border: 1px solid currentColor; border-radius: 6px; padding: 3px 8px; background: white; font-size: 11px; font-weight: 800; }
 .cs-health-result strong { font-size: 17px; line-height: 1; }
 .cs-health-result.cs-status-green { color: var(--cs-green); }
@@ -205,8 +210,12 @@
 .cs-health-score-item.is-future { background: #f4f5f7; opacity: .62; }
 .cs-health-settings select:focus { outline: none; border-color: var(--cs-primary); box-shadow: 0 0 0 2px rgba(239,149,181,.2); }
 .cs-health-actions { border-top: 1px solid #e7e9ee; padding-top: 7px; }
-.cs-health-actions > span { display: block; margin-bottom: 4px; color: #5a6475; font-size: 10px; font-weight: 800; }
-.cs-health-actions p { margin: 2px 0; color: #3a4252; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.cs-health-actions summary { position: relative; padding-right: 22px; color: #5a6475; font-size: 10px; font-weight: 800; list-style: none; cursor: pointer; }
+.cs-health-actions summary::-webkit-details-marker { display: none; }
+.cs-health-actions summary::after { position: absolute; top: 0; right: 2px; color: #262d38; content: "▼"; transition: transform .16s; }
+.cs-health-actions[open] summary::after { transform: rotate(180deg); }
+.cs-health-actions > div { padding-top: 7px; }
+.cs-health-actions p { margin: 3px 0; color: #3a4252; font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
 
 /* CSタスク */
 .cs-task-section { border: 1px solid var(--cs-rose); background: #fff9fb; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -298,6 +307,53 @@
 }
 @media (min-width: 1100px) {
   .cs-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Compact CS card */
+.cs-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
+.cs-card { gap: 10px; padding: 18px; border-width: 1.5px; border-radius: 10px; box-shadow: 0 2px 7px rgba(61,72,88,.10); }
+.cs-card-head-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 46%); gap: 12px; align-items: end; }
+.cs-card-identity { min-width: 0; }
+.cs-card-title { padding-right: 0; font-size: 17px; }
+.cs-card-sub { gap: 5px; margin-top: 7px; }
+.cs-meta-tag { padding: 3px 8px; background: rgba(255,255,255,.78); border: 1px solid rgba(239,149,181,.24); font-size: 10px; }
+.cs-meta-date { color: #b25b7d; }
+.cs-meta-person { color: #76507c; }
+.cs-card-state-field { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 7px; min-width: 0; }
+.cs-card-state-field > span { color: #596579; font-size: 10px; font-weight: 800; }
+.cs-card-state-select { padding: 8px 9px; border-color: rgba(239,149,181,.42); background: rgba(255,255,255,.92); font-size: 11px; }
+.cs-products { gap: 6px; }
+.cs-product-badge { padding: 3px 9px; background: #fff4f8; font-size: 10px; }
+.cs-health-section { gap: 10px; padding: 12px; border-color: rgba(117,135,159,.26); background: rgba(255,255,255,.94); }
+.cs-health-title { font-size: 13px; }
+.cs-health-result { padding: 5px 9px; font-size: 11px; }
+.cs-health-result strong { font-size: 20px; }
+.cs-health-settings { gap: 8px; }
+.cs-health-settings label { gap: 4px; font-size: 9px; }
+.cs-health-settings select { padding: 7px 6px; font-size: 10px; }
+.cs-health-actions { padding-top: 9px; }
+.cs-health-actions p { line-height: 1.5; }
+.last-visit-indicator { padding: 7px 10px; font-size: 11px; }
+.cs-visits-section { display: block; }
+.cs-visits-section summary { list-style: none; cursor: pointer; padding: 3px 1px; }
+.cs-visits-section summary::-webkit-details-marker { display: none; }
+.cs-visits-section summary::after { display: inline-block; margin-left: 6px; color: #738094; content: "▼"; transition: transform .16s; }
+.cs-visits-section[open] summary::after { transform: rotate(180deg); }
+.cs-visits-section .cs-visit-item { margin-top: 6px; }
+.cs-visits-empty { padding: 3px 1px; color: #778296; font-size: 11px; font-weight: 700; }
+.cs-card-actions { display: grid; grid-template-columns: minmax(140px, 1.8fr) repeat(3, auto); gap: 7px; }
+.cs-card-actions button { min-height: 36px; padding: 7px 13px; }
+.cs-status-table tbody tr.cs-list-row-alert td { background: #fff0f3; }
+.cs-status-table tbody tr.cs-list-row-alert td:first-child { box-shadow: inset 4px 0 0 #dc5366; }
+.cs-status-table tbody tr.cs-list-row-alert:hover td { background: #ffe5eb; }
+.cs-list-row-alert .cs-list-state { border-color: #e58c98; background: #fff; color: #b2253d; }
+@media (max-width: 600px) {
+  .cs-grid { grid-template-columns: 1fr; }
+  .cs-card-head-grid { grid-template-columns: 1fr; align-items: stretch; }
+  .cs-card-state-field { grid-template-columns: 42px minmax(0,1fr); }
+  .cs-card-actions { grid-template-columns: 1fr repeat(3, auto); }
+  .cs-health-header { grid-template-columns: 1fr; align-items: stretch; }
+  .cs-health-score { grid-template-columns: minmax(0,1fr) auto; }
 }
 
 
