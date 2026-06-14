@@ -519,7 +519,7 @@ function createCsListRow(p) {
   const alertClass = state !== "正常" ? " cs-list-row-alert" : "";
   return `<tr class="${alertClass.trim()}">
     <td><span class="cs-list-state">${escapeHtml(state)}</span></td>
-    <td class="cs-list-hospital" onclick="openCsDetailModal('${p.id}')">${escapeHtml(p.hospitalName || "")}</td>
+    <td class="cs-list-hospital"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
     <td><span class="cs-list-health ${health.className}">${health.score}</span></td>

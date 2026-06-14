@@ -280,7 +280,9 @@
 .cs-status-table th:nth-child(6), .cs-status-table td:nth-child(6) { width: 12%; }
 .cs-status-table th:nth-child(7), .cs-status-table td:nth-child(7) { width: 18%; }
 .cs-status-table tbody tr:hover { background: #fff8fb; }
-.cs-list-hospital { font-weight: 700; color: #9d4c6e; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.cs-list-hospital { font-weight: 700; }
+.cs-list-hospital-link { color: #9d4c6e; text-decoration: underline; text-underline-offset: 2px; }
+.cs-list-hospital-link:hover { color: var(--cs-primary); }
 .cs-list-products { color: #5a6475; font-size: 12px; }
 .cs-list-memo { color: #5a6475; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
 .cs-list-loading { text-align: center; padding: 48px; color: #9aa5b4; font-size: 14px; }
