@@ -247,6 +247,13 @@ function getLatestVisitDateText(p) {
   return latest.endDate || latest.startDate || "—";
 }
 
+function getLatestVisitDateValue(p) {
+  const latestDate = getLatestVisitDateText(p);
+  if (!latestDate || latestDate === "—") return 0;
+  const time = new Date(latestDate).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
 function getLatestVisitMemo(p) {
   const latest = getLatestVisit(p);
   return latest?.freeText || "";
@@ -546,6 +553,8 @@ function renderCsList() {
   const statePri={normal:0,problem:1,issue:2};
   const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
   filtered.sort((a, b) => {
+    const latestDiff = getLatestVisitDateValue(b) - getLatestVisitDateValue(a);
+    if (latestDiff !== 0) return latestDiff;
     const stateDiff=statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)];
     if(stateDiff!==0) return stateDiff;
     const pa = pri[getCsHealth(a).className] ?? 4;
