@@ -149,42 +149,69 @@ function updateStaffFilter() {
 function openDetailModal(id) {
   const p = allProjects.find(x=>x.id===id); if (!p) return;
   document.getElementById("detailTitle").textContent=p.hospitalName||"施設詳細";
-  const rows = [
-    ["稼働日（予定含む）",p.goLiveDate],["施設名",p.hospitalName],
-    ["新規/既存",p.newOrExisting],["スマベ",p.smabe],
-    ["メイン担当",p.mainPerson],["サブ担当",p.subPerson],
-    ["経営主体",p.keieiShukai],["許可病床数",p.kyokaBedNum],
-    ["病棟構成",p.byokoKosei],["導入病棟",p.donyuByoko],["導入病床数",p.donyuBedNum],
-    ["ベッドサイド端末（既存/新規台数）",p.bedsideTerminal],
-    ["ステーション端末（既存/新規台数）",p.stationTerminal],
-    ["眠りSCAN（既存/新規台数）",p.nemiriScan],
-    ["離床CATCH（既存/新規台数）",p.rishoCatch],
-    ["Wi-Fiベッドナビ（既存/新規台数）",p.wifiNav],
-    ["タブレット設置位置",p.tabletPos],
-    ["電子カルテ（ベンダー/機種）",p.electronicKarte],
-    ["ナースコール（メーカー/機種）",p.nurseCall],
-    ["周辺連携機能",p.shuhenRenkei],
-    ["案件概要",p.ankenGaiyou],
-    ["スケジュール状況",p.scheduleStatus],["備考",p.memo],
-  ];
-  const memoRow = rows.find(([l]) => l === "備考");
-  const gridRows = rows.filter(([l]) => l !== "備考");
 
-  document.getElementById("detailBody").innerHTML = `
-    <div class="detail-grid">
-      ${gridRows.map(([l,v]) => `
-        <div class="detail-cell">
-          <div class="detail-cell-label">${escapeHtml(l)}</div>
-          <div class="detail-cell-value">${v ? escapeHtml(v) : '<span class="detail-cell-empty">未入力</span>'}</div>
-        </div>`).join("")}
+  const sections = [
+    { title: "基本情報", rows: [
+        ["稼働日（予定含む）", p.goLiveDate],
+        ["施設名", p.hospitalName],
+        ["新規/既存", p.newOrExisting],
+        ["スマベ", p.smabe],
+        ["メイン担当", p.mainPerson],
+        ["サブ担当", p.subPerson],
+    ]},
+    { title: "施設情報", rows: [
+        ["経営主体", p.keieiShukai],
+        ["許可病床数", p.kyokaBedNum],
+        ["病棟構成", p.byokoKosei],
+        ["導入病棟", p.donyuByoko],
+        ["導入病床数", p.donyuBedNum],
+    ]},
+    { title: "機器情報", rows: [
+        ["ベッドサイド端末（既存/新規台数）", p.bedsideTerminal],
+        ["ステーション端末（既存/新規台数）", p.stationTerminal],
+        ["眠りSCAN（既存/新規台数）", p.nemiriScan],
+        ["離床CATCH（既存/新規台数）", p.rishoCatch],
+        ["Wi-Fiベッドナビ（既存/新規台数）", p.wifiNav],
+        ["タブレット設置位置", p.tabletPos],
+    ]},
+    { title: "システム連携", rows: [
+        ["電子カルテ（ベンダー/機種）", p.electronicKarte],
+        ["ナースコール（メーカー/機種）", p.nurseCall],
+        ["周辺連携機能", p.shuhenRenkei],
+    ]},
+    { title: "案件情報", rows: [
+        ["案件概要", p.ankenGaiyou],
+        ["スケジュール状況", p.scheduleStatus],
+    ]},
+    { title: "備考", rows: [
+        ["備考", p.memo],
+    ]},
+  ];
+
+  document.getElementById("detailBody").innerHTML = sections.map((sec, idx) => `
+    <div class="detail-accordion ${idx === 0 ? 'open' : ''}">
+      <button type="button" class="detail-accordion-header" onclick="toggleDetailAccordion(this)">
+        <span>${escapeHtml(sec.title)}</span>
+        <span class="detail-accordion-arrow">▾</span>
+      </button>
+      <div class="detail-accordion-body">
+        <div class="detail-grid">
+          ${sec.rows.map(([l,v]) => `
+            <div class="detail-cell">
+              <div class="detail-cell-label">${escapeHtml(l)}</div>
+              <div class="detail-cell-value">${v ? escapeHtml(v) : '<span class="detail-cell-empty">未入力</span>'}</div>
+            </div>`).join("")}
+        </div>
+      </div>
     </div>
-    ${memoRow ? `
-      <div class="detail-memo-block">
-        <div class="detail-cell-label">${escapeHtml(memoRow[0])}</div>
-        <div class="detail-cell-value">${memoRow[1] ? escapeHtml(memoRow[1]) : '<span class="detail-cell-empty">未入力</span>'}</div>
-      </div>` : ""}
-  `;
+  `).join("");
+
   document.getElementById("detailModal").classList.add("open");
+}
+
+function toggleDetailAccordion(headerEl) {
+  const section = headerEl.closest(".detail-accordion");
+  section.classList.toggle("open");
 }
 function closeDetailModal() { document.getElementById("detailModal").classList.remove("open"); }
 

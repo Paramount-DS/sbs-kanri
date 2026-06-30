@@ -699,6 +699,68 @@ body {
   white-space: pre-wrap;
 }
 
+/* 詳細表示：アコーディオン */
+.detail-accordion {
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.detail-accordion:last-child { margin-bottom: 0; }
+
+.detail-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a5cb8;
+  color: #ffffff;
+  border: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.detail-accordion-header:hover { background: #1551a3; }
+
+.detail-accordion-arrow {
+  font-size: 13px;
+  transition: transform .2s ease;
+}
+.detail-accordion.open .detail-accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.detail-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease, padding .25s ease;
+  padding: 0 14px;
+  background: #ffffff;
+}
+.detail-accordion.open .detail-accordion-body {
+  max-height: 1200px;
+  padding: 14px;
+}
+
+.detail-accordion .detail-grid {
+  gap: 10px 14px;
+}
+.detail-accordion .detail-cell {
+  background: var(--gray-50);
+}
+
+/* 「備考」セクションは1列固定（メモ欄が長文になりやすいため） */
+.detail-accordion:last-child .detail-grid {
+  grid-template-columns: 1fr;
+}
+.detail-accordion:last-child .detail-cell-value {
+  white-space: pre-wrap;
+}
+
 /* 旧テーブル形式（互換用に残置） */
 .detail-table {
   width: 100%;
