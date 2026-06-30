@@ -214,7 +214,6 @@ function openDetailModal(id) {
   const p = allProjects.find(x=>x.id===id); if (!p) return;
   document.getElementById("detailTitle").textContent = p.hospitalName||"施設詳細";
 
-  // セクション区分（アコーディオン）
   const sections = [
     { title: "基本情報", rows: [
         ["稼働日（予定含む）", p.goLiveDate],
@@ -253,7 +252,7 @@ function openDetailModal(id) {
     ]},
   ];
 
-  document.getElementById("detailBody").innerHTML = sections.map((sec, idx) => `
+  document.getElementById("detailBody").innerHTML = sections.map(sec => `
     <div class="detail-accordion open">
       <button type="button" class="detail-accordion-header" onclick="toggleDetailAccordion(this)">
         <span>${escapeHtml(sec.title)}</span>

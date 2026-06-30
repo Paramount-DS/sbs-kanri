@@ -655,48 +655,35 @@ body {
 }
 .btn-detail:hover { background: #d0e2fb; }
 
-/* 詳細表示：2列グリッドレイアウト */
-.detail-modal-box { max-width: 820px; }
+/* 詳細テーブル */
+.detail-modal-box { max-width: 700px; }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 14px;
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
-.detail-cell {
+.detail-table th {
+  width: 200px;
+  padding: 9px 12px;
   background: var(--gray-50);
   border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.detail-cell-label {
-  font-size: 11px;
   font-weight: 600;
   color: var(--gray-600);
-  letter-spacing: .02em;
-  margin-bottom: 4px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
 }
 
-.detail-cell-value {
-  font-size: 13px;
-  color: var(--gray-800);
-  word-break: break-all;
-  line-height: 1.5;
-}
-
-.detail-cell-empty { color: #9aa5b4; }
-
-.detail-memo-block {
-  margin-top: 10px;
-  background: var(--gray-50);
+.detail-table td {
+  padding: 9px 12px;
   border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 12px 14px;
-}
-.detail-memo-block .detail-cell-value {
-  white-space: pre-wrap;
+  color: var(--gray-800);
+  vertical-align: top;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.6;
 }
 
 /* 詳細表示：アコーディオン */
@@ -742,7 +729,7 @@ body {
   background: #ffffff;
 }
 .detail-accordion.open .detail-accordion-body {
-  max-height: 1200px;
+  max-height: 2000px;
   padding: 0;
 }
 
@@ -762,38 +749,57 @@ body {
   white-space: pre-wrap;
 }
 
-/* 旧テーブル形式（互換用に残置） */
-.detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.detail-table th {
-  width: 200px;
-  padding: 9px 12px;
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  font-weight: 600;
-  color: var(--gray-600);
-  text-align: left;
-  vertical-align: top;
-  white-space: nowrap;
-}
-.detail-table td {
-  padding: 9px 12px;
-  border: 1px solid var(--gray-200);
-  color: var(--gray-800);
-  vertical-align: top;
-  word-break: break-all;
-}
+.detail-cell-empty { color: #9aa5b4; }
 
-@media (max-width: 700px) {
+@media (max-width: 600px) {
   .detail-modal-box { max-width: 95vw; }
-  .detail-grid { grid-template-columns: 1fr; gap: 8px; }
-  .detail-cell-label { font-size: 10px; }
-  .detail-cell-value { font-size: 12px; }
-  .detail-table th { width: 120px; font-size: 11px; }
-  .detail-table td { font-size: 12px; }
+
+  /* スマホ：th/tdを縦積みにして読みやすく */
+  .detail-table, .detail-table tbody, .detail-table tr {
+    display: block;
+    width: 100%;
+  }
+  .detail-table tr {
+    margin-bottom: 8px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .detail-table tr:last-child { margin-bottom: 0; }
+  .detail-table th, .detail-table td {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+    border: none;
+  }
+  .detail-table th {
+    font-size: 11px;
+    padding: 8px 12px 4px;
+    background: var(--gray-50);
+    white-space: normal;
+  }
+  .detail-table td {
+    font-size: 13px;
+    padding: 4px 12px 10px;
+    word-break: normal;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+  }
+
+  /* アコーディオン内のテーブルは枠の二重表示を防ぐため調整 */
+  .detail-accordion .detail-table tr {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 0;
+  }
+  .detail-accordion .detail-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .detail-accordion-header { font-size: 13px; padding: 10px 14px; }
 }
 
 .btn-edit {

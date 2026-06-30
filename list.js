@@ -188,7 +188,7 @@ function openDetailModal(id) {
     ]},
   ];
 
-  document.getElementById("detailBody").innerHTML = sections.map((sec, idx) => `
+  document.getElementById("detailBody").innerHTML = sections.map(sec => `
     <div class="detail-accordion open">
       <button type="button" class="detail-accordion-header" onclick="toggleDetailAccordion(this)">
         <span>${escapeHtml(sec.title)}</span>
