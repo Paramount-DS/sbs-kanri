@@ -167,10 +167,23 @@ function openDetailModal(id) {
     ["案件概要",p.ankenGaiyou],
     ["スケジュール状況",p.scheduleStatus],["備考",p.memo],
   ];
-  document.getElementById("detailBody").innerHTML=`
-    <table class="detail-table"><tbody>
-      ${rows.map(([l,v])=>`<tr><th>${escapeHtml(l)}</th><td>${v?escapeHtml(v):'<span style="color:#9aa5b4">未入力</span>'}</td></tr>`).join("")}
-    </tbody></table>`;
+  const memoRow = rows.find(([l]) => l === "備考");
+  const gridRows = rows.filter(([l]) => l !== "備考");
+
+  document.getElementById("detailBody").innerHTML = `
+    <div class="detail-grid">
+      ${gridRows.map(([l,v]) => `
+        <div class="detail-cell">
+          <div class="detail-cell-label">${escapeHtml(l)}</div>
+          <div class="detail-cell-value">${v ? escapeHtml(v) : '<span class="detail-cell-empty">未入力</span>'}</div>
+        </div>`).join("")}
+    </div>
+    ${memoRow ? `
+      <div class="detail-memo-block">
+        <div class="detail-cell-label">${escapeHtml(memoRow[0])}</div>
+        <div class="detail-cell-value">${memoRow[1] ? escapeHtml(memoRow[1]) : '<span class="detail-cell-empty">未入力</span>'}</div>
+      </div>` : ""}
+  `;
   document.getElementById("detailModal").classList.add("open");
 }
 function closeDetailModal() { document.getElementById("detailModal").classList.remove("open"); }
