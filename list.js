@@ -195,13 +195,11 @@ function openDetailModal(id) {
         <span class="detail-accordion-arrow">▾</span>
       </button>
       <div class="detail-accordion-body">
-        <div class="detail-grid">
-          ${sec.rows.map(([l,v]) => `
-            <div class="detail-cell">
-              <div class="detail-cell-label">${escapeHtml(l)}</div>
-              <div class="detail-cell-value">${v ? escapeHtml(v) : '<span class="detail-cell-empty">未入力</span>'}</div>
-            </div>`).join("")}
-        </div>
+        <table class="detail-table">
+          <tbody>
+            ${sec.rows.map(([l,v]) => `<tr><th>${escapeHtml(l)}</th><td>${v ? escapeHtml(v) : '<span class="detail-cell-empty">未入力</span>'}</td></tr>`).join("")}
+          </tbody>
+        </table>
       </div>
     </div>
   `).join("");

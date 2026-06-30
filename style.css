@@ -738,26 +738,27 @@ body {
   max-height: 0;
   overflow: hidden;
   transition: max-height .25s ease, padding .25s ease;
-  padding: 0 14px;
+  padding: 0;
   background: #ffffff;
 }
 .detail-accordion.open .detail-accordion-body {
   max-height: 1200px;
-  padding: 14px;
+  padding: 0;
 }
 
-.detail-accordion .detail-grid {
-  gap: 10px 14px;
+.detail-accordion .detail-table {
+  margin: 0;
 }
-.detail-accordion .detail-cell {
-  background: var(--gray-50);
+.detail-accordion .detail-table th {
+  width: 220px;
+}
+.detail-accordion .detail-table tr:last-child th,
+.detail-accordion .detail-table tr:last-child td {
+  border-bottom: none;
 }
 
-/* 「備考」セクションは1列固定（メモ欄が長文になりやすいため） */
-.detail-accordion:last-child .detail-grid {
-  grid-template-columns: 1fr;
-}
-.detail-accordion:last-child .detail-cell-value {
+/* 「備考」セクションはメモが長文になりやすいので折返し */
+.detail-accordion:last-child .detail-table td {
   white-space: pre-wrap;
 }
 
