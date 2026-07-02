@@ -78,6 +78,18 @@ let dashboardVisitEditIndex = -1;
 let dashboardUnsubscribe = null;
 let migrationRunning = false;
 
+const DASHBOARD_PROJECT_BRANCHES = [
+  ["名古屋支店", "nagoya_projects"],
+  ["札幌支店", "sapporo_projects"],
+  ["仙台支店", "sendai_projects"],
+  ["東京支店", "tokyo_projects"],
+  ["横浜支店", "yokohama_projects"],
+  ["さいたま支店", "saitama_projects"],
+  ["大阪支店", "osaka_projects"],
+  ["広島支店", "hiroshima_projects"],
+  ["福岡支店", "fukuoka_projects"],
+];
+
 function blank(value) { return value === undefined || value === null || value === ""; }
 function shown(value, suffix = "") { return blank(value) ? "-" : `${value}${suffix}`; }
 function numberValue(value) { if(blank(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
@@ -147,6 +159,14 @@ function badge(label, cls="") { return `<span class="dashboard-risk-badge ${cls}
 function displaySelect(value, options) { return options.find(row=>row[0]===value)?.[1] || "-"; }
 function rowsHtml(rows) { return `<dl class="dashboard-data-list">${rows.map(([k,v])=>`<div><dt>${escapeHtml(String(k))}</dt><dd>${escapeHtml(String(v))}</dd></div>`).join("")}</dl>`; }
 
+function dashboardReadOnlyModal(title, html) {
+  document.getElementById("dashboardModalTitle").textContent = title;
+  document.getElementById("dashboardModalBody").innerHTML = html;
+  document.getElementById("dashboardEditModal").classList.add("open");
+  const button = dashboardSaveButton();
+  if (button) button.style.display = "none";
+}
+
 function basicRows(p) {
   return [["院名",shown(p.hospitalName)],["導入病棟名",shown(p.ward)],["稼働開始日",shown(p.startDate)],["サポートエンド",shown(p.supportEndDate)],
     ["担当営業",shown(p.salesPerson)],["担当CS",shown(p.csPerson)],["SOL PM",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
@@ -214,6 +234,9 @@ function renderVisitsCard(p) {
 function dashboardPanel(category,title,subtitle,body,c) {
   return `<article class="dashboard-category-card panel-${category}"><div class="dashboard-card-head"><div><h2>${title}</h2><p>${subtitle}</p></div><div>${categoryRisk(category,c)}<button onclick="openDashboardModal('${category}')">Input</button></div></div>${body}</article>`;
 }
+function renderBasicPanel(p,c) {
+  return `<article class="dashboard-category-card panel-basic"><div class="dashboard-card-head"><div><h2>基本情報</h2><p>既存案件情報</p></div><div>${categoryRisk("basic",c)}<button onclick="openProjectDetailFromDashboard()">詳細</button><button onclick="openDashboardModal('basic')">Input</button></div></div>${rowsHtml(basicRows(p))}</article>`;
+}
 function renderPhaseScores(p) {
   const values=getCsHealth(p).values||{};
   return `<article class="dashboard-category-card panel-phase-score"><div class="dashboard-card-head"><div><h2>フェーズスコア</h2><p>登録タスク達成度の平均</p></div><button onclick="openDashboardModal('phase')">Input</button></div><div class="dashboard-phase-bars">${CS_HEALTH_PHASES.map(phase=>{
@@ -247,12 +270,12 @@ function renderUsagePanel(p,c) {
 }
 function renderCategories(p,c) {
   document.getElementById("dashboardCategoryGrid").innerHTML=[
-    dashboardPanel("basic","基本情報","既存案件情報",rowsHtml(basicRows(p)),c),
+    renderBasicPanel(p,c),
     dashboardPanel("csActivity","CS活動","訪問・対応状況",rowsHtml(categoryRows("csActivity",p,c)),c),
     renderPhaseScores(p),
     renderTrendPanel(p,c),
     renderWorkReductionPanel(c),
-    `<article class="dashboard-category-card panel-visits"><div class="dashboard-card-head"><div><h2>訪問履歴</h2><p>最新5件を表示</p></div><button onclick="openDashboardModal('visits')">Input</button></div>${renderVisitsCard(p)}</article>`,
+    `<article class="dashboard-category-card panel-visits"><div class="dashboard-card-head"><div><h2>訪問履歴</h2><p>最新5件を表示</p></div><div><button onclick="showFullVisitHistory()">履歴詳細</button><button onclick="openDashboardModal('visits')">Input</button></div></div>${renderVisitsCard(p)}</article>`,
     dashboardPanel("advocacy","共創・事例化","顧客協力・事例化",rowsHtml(categoryRows("advocacy",p,c)),c),
     renderRolePanel(p,c),
     renderUsagePanel(p,c)
@@ -261,8 +284,8 @@ function renderCategories(p,c) {
 function renderDashboard(p) { const c=dashboardCalculations(p); document.getElementById("dashboardHospitalName").textContent=p.hospitalName||"CSダッシュボード"; renderSummary(p,c); renderPhasePanel(p); renderCategories(p,c); }
 
 function inputHtml(field,value) {
-  const [key,label,type,options]=field, safe=escapeHtml(String(value??""));
-  if(type==="select") return `<div class="form-group"><label class="form-label">${label}</label><select class="form-select" name="${key}">${options.map(([v,t])=>`<option value="${v}"${String(value??"")===v?" selected":""}>${t}</option>`).join("")}</select></div>`;
+  const [key,label,type,options]=field, inputValue=(key==="systemType1"||key==="systemType2")?normalizeSystemType(value):value, safe=escapeHtml(String(inputValue??""));
+  if(type==="select") return `<div class="form-group"><label class="form-label">${label}</label><select class="form-select" name="${key}">${options.map(([v,t])=>`<option value="${v}"${String(inputValue??"")===v?" selected":""}>${t}</option>`).join("")}</select></div>`;
   return `<div class="form-group"><label class="form-label">${label}</label><input class="form-input" name="${key}" type="${type}" value="${safe}"${type==="number"?' min="0" step="any"':''}></div>`;
 }
 function roleInputRow(role={name:"",count:""}) {
@@ -291,7 +314,7 @@ function removeDashboardRole(button){const rows=document.querySelectorAll(".dash
 function basicForm(p) {
   const states=[["","-"],["準備中","準備中"],["稼働中","稼働中"],["停止中","停止中"],["解約","解約"],["要注意","要注意"]];
   const fields=[["hospitalName","院名","text"],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
-    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","SOL PM","text"],["systemType1","システム種類","select",[["","-"],["SBS","SBS"],["SBS-Lite","SBS-Lite"],["Connectハイブリット","Connectハイブリット"],["Connectオンプレ","Connectオンプレ"]]],
+    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","SOL PM","text"],["systemType1","システム種類","select",[["","-"],["SBS-Full","SBS-Full"],["SBS-Lite","SBS-Lite"],["SCAN-Viewer","SCAN-Viewer"],["Connectハイブリット","Connectハイブリット"],["Connectオンプレ","Connectオンプレ"]]],
     ["moveOp","病床移動運用","text"],["bedNumStaff","病床番号変更担当","text"],["bedMoveStaff","床頭台移動担当","text"],["state","状態","select",states]];
   return fields.map(f=>inputHtml(f,p[f[0]])).join("")+`<div class="form-group"><label class="form-label">導入製品</label><div class="dashboard-check-grid">${[["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"]].map(([k,l])=>`<label><input type="checkbox" name="${k}"${p[k]?" checked":""}>${l}</label>`).join("")}</div></div><div class="form-group"><label class="form-label">メモ</label><textarea class="form-textarea" name="memo" rows="4">${escapeHtml(p.memo||"")}</textarea></div>`;
 }
@@ -310,6 +333,31 @@ function showDashboardVisitList(){dashboardVisitEditIndex=-1;document.getElement
 function openDashboardVisitEditor(index){dashboardVisitEditIndex=index;dashboardEditingCategory="visits";document.getElementById("dashboardModalTitle").textContent="訪問履歴 Edit";document.getElementById("dashboardModalBody").innerHTML=visitEditorForm(dashboardProject);document.getElementById("dashboardEditModal").classList.add("open");const button=dashboardSaveButton();if(button)button.style.display="";updateDashboardVisitTaskDetail();}
 function updateDashboardVisitTasks(status){const select=document.getElementById("dashboardVisitTask"),phase=getCsPhase(normalizeVisitStatus(status));if(!select)return;select.innerHTML=phase.items.map(item=>`<option value="${escapeHtml(item.item)}">${escapeHtml(item.item)}</option>`).join("");updateDashboardVisitTaskDetail();}
 function updateDashboardVisitTaskDetail(){const status=document.querySelector('[name="visitStatus"]')?.value,task=document.getElementById("dashboardVisitTask")?.value,phase=getCsPhase(normalizeVisitStatus(status)),item=phase.items.find(row=>row.item===task)||phase.items[0],target=document.getElementById("dashboardVisitTaskDetail");if(target)target.innerHTML=`<div><span>内容</span><strong>${escapeHtml(item?.content||"-")}</strong></div><div><span>効果・結果</span><p>${escapeHtml(item?.effect||"-")}</p></div>`;}
+function showFullVisitHistory(){
+  const visits=(dashboardProject?.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
+  const html=visits.length?"<div class=\"dashboard-visit-editor-list\">"+visits.map(({visit,index})=>"<div><span><strong>"+escapeHtml(visit.endDate||visit.startDate||"-")+" / "+escapeHtml(getVisitStatusLabel(visit.status))+"</strong><small>"+escapeHtml(visit.taskItem||"-")+"</small><small>"+escapeHtml(visit.taskContent||"")+"</small><small>"+escapeHtml(visit.taskEffect||"")+"</small><small style=\"white-space:pre-wrap;\">"+escapeHtml(visit.freeText||"-")+"</small></span><button type=\"button\" onclick=\"openDashboardVisitEditor("+index+")\">Edit</button></div>").join("")+"</div>":"<p class=\"dashboard-empty\">訪問履歴はありません</p>";
+  dashboardReadOnlyModal("訪問履歴 詳細",html);
+}
+function projectDetailRows(project){
+  return [["支店",project.branchLabel],["稼働日（予定含む）",project.goLiveDate],["施設名",project.hospitalName],["新規・既存",project.newOrExisting],["スマベ",project.smabe],["メイン担当",project.mainPerson],["サブ担当",project.subPerson],["経営主体",project.keieiShukai],["許可病床数",project.kyokaBedNum],["病棟構成",project.byokoKosei],["導入病棟",project.donyuByoko],["導入病床数",project.donyuBedNum],["ベッドサイド端末",project.bedsideTerminal],["ステーション端末",project.stationTerminal],["眠りSCAN",project.nemiriScan],["離床CATCH",project.rishoCatch],["Wi-Fiベッドナビ",project.wifiNav],["タブレット設置位置",project.tabletPos],["電子カルテ",project.electronicKarte],["ナースコール",project.nurseCall],["周辺連携機能",project.shuhenRenkei],["案件概要",project.ankenGaiyou],["スケジュール状況",project.scheduleStatus],["備考",project.memo]];
+}
+async function openProjectDetailFromDashboard(){
+  const hospitalName=dashboardProject?.hospitalName||"";
+  if(!hospitalName){dashboardReadOnlyModal("案件管理 詳細","<p class=\"dashboard-empty\">病院名がありません</p>");return;}
+  dashboardReadOnlyModal("案件管理 詳細","<p class=\"dashboard-empty\">検索中...</p>");
+  try{
+    const results=[];
+    for(const [branchLabel,collection] of DASHBOARD_PROJECT_BRANCHES){
+      const snapshot=await db.collection(collection).where("hospitalName","==",hospitalName).get();
+      snapshot.forEach(doc=>results.push({id:doc.id,branchLabel,...doc.data()}));
+    }
+    const html=results.length?results.map(project=>"<div class=\"detail-accordion open\"><button type=\"button\" class=\"detail-accordion-header\"><span>"+escapeHtml(project.branchLabel)+" / "+escapeHtml(project.hospitalName||"")+"</span></button><div class=\"detail-accordion-body\">"+rowsHtml(projectDetailRows(project))+"</div></div>").join(""):"<p class=\"dashboard-empty\">案件管理側に同じ病院名の詳細が見つかりませんでした。<br>"+escapeHtml(hospitalName)+"</p>";
+    dashboardReadOnlyModal("案件管理 詳細",html);
+  }catch(error){
+    console.error(error);
+    dashboardReadOnlyModal("案件管理 詳細","<p class=\"dashboard-empty\">案件管理側の詳細取得に失敗しました</p>");
+  }
+}
 function openDashboardModal(category) {
   dashboardEditingCategory=category; dashboardVisitEditIndex=-1;
   const title=category==="phase"?"現在フェーズ":category==="workReduction"?"業務削減時間":CATEGORY_META[category][0];
