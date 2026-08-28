@@ -83,10 +83,12 @@ function checkDelay(project) {
   const live = new Date(project.goLiveDate);
   const d = Math.ceil((live-today)/(1000*60*60*24));
   const t = project.currentTask;
-  const tasks = getTasksForType(project.projectType);
+  // projectTypeが未設定の既存データは"new"扱い
+  const ptype = project.projectType || "new";
+  const tasks = getTasksForType(ptype);
   if (t >= tasks.length) return "completed";
-  // 新規導入のみ詳細な遅延判定、その他は簡易判定
-  if (project.projectType === "new") {
+  if (ptype === "new") {
+    // 新規導入：詳細な遅延判定
     if (t <= 9 && d < -1)   return "warning";
     if (t < 8  && d <= 170) return "delay";
     if (t < 7  && d <= 180) return "delay";
@@ -94,6 +96,7 @@ function checkDelay(project) {
     if (t < 3  && d <= 210) return "delay";
     if (t === 0 && d <= 240) return "warning";
   } else {
+    // 病棟追加・バージョンアップ：簡易判定
     if (d < -1) return "warning";
     if (t < 3 && d <= 60) return "delay";
     if (t === 0 && d <= 90) return "warning";
@@ -116,11 +119,12 @@ function isDuplicateHospital(project, projects = allProjects) {
 // =============================================
 function createCard(project) {
   const statusClass = checkDelay(project);
-  const tasks = getTasksForType(project.projectType);
+  const ptypeKey = project.projectType || "new";
+  const tasks = getTasksForType(ptypeKey);
   const progress = Math.min(Math.round((project.currentTask/tasks.length)*100),100);
   const isCompleted = project.currentTask >= tasks.length;
   const currentTaskLabel = isCompleted ? "✅ 全工程完了" : tasks[project.currentTask];
-  const ptype = PROJECT_TYPES[project.projectType] || PROJECT_TYPES.new;
+  const ptype = PROJECT_TYPES[ptypeKey] || PROJECT_TYPES.new;
   const live = new Date(project.goLiveDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const daysUntilLive = Math.ceil((live-today)/(1000*60*60*24));
