@@ -2,11 +2,37 @@
 // 統合版 案件管理ツール - app.js
 // =============================================
 
-const TASKS = [
-  "01 商談中","02 概算見積もり（参考価格書）提出","03 導入環境確認（仮想／NW環境含む）",
-  "04 仕入れ見積もり取得","05 最終見積提出","06 カスタマーサクセス打合せ",
-  "07 受注","08 社内キックオフ","09 システム構築準備期間","10 稼働（立会等）","11 稼働後フォロー",
-];
+// 案件タイプ定義
+const PROJECT_TYPES = {
+  new: { label: "新規導入", color: "#1a5cb8", badgeColor: "#e8f0fc", badgeText: "#1a5cb8" },
+  add: { label: "病棟追加", color: "#16a085", badgeColor: "#e6f4ee", badgeText: "#16a085" },
+  vup: { label: "バージョンアップ", color: "#8e44ad", badgeColor: "#f3e8ff", badgeText: "#8e44ad" },
+};
+
+// タイプ別工程ステップ
+const TASKS_MAP = {
+  new: [
+    "01 商談中","02 概算見積もり（参考価格書）提出","03 導入環境確認（仮想／NW環境含む）",
+    "04 仕入れ見積もり取得","05 最終見積提出","06 カスタマーサクセス打合せ",
+    "07 受注","08 社内キックオフ","09 システム構築準備期間","10 稼働（立会等）","11 稼働後フォロー",
+  ],
+  add: [
+    "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
+  ],
+  vup: [
+    "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
+  ],
+};
+
+// 後方互換のため既存コードで使うTASKS（新規導入デフォルト）
+const TASKS = TASKS_MAP.new;
+
+// 現在表示中のタブ
+let currentProjectType = "new";
+
+function getTasksForType(type) {
+  return TASKS_MAP[type] || TASKS_MAP.new;
+}
 
 const BRANCHES = {
   nagoya:   { label:"名古屋支店", collection:"nagoya_projects",   color:"#1a5cb8" },
@@ -57,13 +83,21 @@ function checkDelay(project) {
   const live = new Date(project.goLiveDate);
   const d = Math.ceil((live-today)/(1000*60*60*24));
   const t = project.currentTask;
-  if (t >= TASKS.length) return "completed";
-  if (t <= 9 && d < -1)   return "warning";
-  if (t < 8  && d <= 170) return "delay";
-  if (t < 7  && d <= 180) return "delay";
-  if (t < 5  && d <= 190) return "delay";
-  if (t < 3  && d <= 210) return "delay";
-  if (t === 0 && d <= 240) return "warning";
+  const tasks = getTasksForType(project.projectType);
+  if (t >= tasks.length) return "completed";
+  // 新規導入のみ詳細な遅延判定、その他は簡易判定
+  if (project.projectType === "new") {
+    if (t <= 9 && d < -1)   return "warning";
+    if (t < 8  && d <= 170) return "delay";
+    if (t < 7  && d <= 180) return "delay";
+    if (t < 5  && d <= 190) return "delay";
+    if (t < 3  && d <= 210) return "delay";
+    if (t === 0 && d <= 240) return "warning";
+  } else {
+    if (d < -1) return "warning";
+    if (t < 3 && d <= 60) return "delay";
+    if (t === 0 && d <= 90) return "warning";
+  }
   return "";
 }
 
@@ -82,9 +116,11 @@ function isDuplicateHospital(project, projects = allProjects) {
 // =============================================
 function createCard(project) {
   const statusClass = checkDelay(project);
-  const progress = Math.min(Math.round((project.currentTask/TASKS.length)*100),100);
-  const isCompleted = project.currentTask >= TASKS.length;
-  const currentTaskLabel = isCompleted ? "✅ 全工程完了" : TASKS[project.currentTask];
+  const tasks = getTasksForType(project.projectType);
+  const progress = Math.min(Math.round((project.currentTask/tasks.length)*100),100);
+  const isCompleted = project.currentTask >= tasks.length;
+  const currentTaskLabel = isCompleted ? "✅ 全工程完了" : tasks[project.currentTask];
+  const ptype = PROJECT_TYPES[project.projectType] || PROJECT_TYPES.new;
   const live = new Date(project.goLiveDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const daysUntilLive = Math.ceil((live-today)/(1000*60*60*24));
@@ -100,19 +136,20 @@ function createCard(project) {
   if (statusClass==="delay") statusBadge=`<span class="badge badge-delay">遅延</span>`;
   else if (statusClass==="warning") statusBadge=`<span class="badge badge-warning">注意</span>`;
   else if (statusClass==="completed") statusBadge=`<span class="badge badge-completed">完了</span>`;
+  const typeBadge = `<span class="badge-type" style="background:${ptype.badgeColor};color:${ptype.badgeText};">${ptype.label}</span>`;
   const duplicateBadge = isDuplicateHospital(project) ? `<span class="duplicate-badge">重複</span>` : "";
-  const dots = TASKS.map((_,i)=>{
+  const dots = tasks.map((_,i)=>{
     let cls="dot";
     if (i<project.currentTask) cls+=" dot-done";
     else if (i===project.currentTask&&!isCompleted) cls+=" dot-current";
-    return `<span class="${cls}" title="${TASKS[i]}"></span>`;
+    return `<span class="${cls}" title="${tasks[i]}"></span>`;
   }).join("");
   return `
     <div class="project-card ${statusClass}" data-id="${project.id}">
       <div class="card-header">
         <div class="card-title-row">
           <h3 class="hospital-name">${escapeHtml(project.hospitalName)}${duplicateBadge}</h3>
-          <div class="card-badges">${statusBadge}</div>
+          <div class="card-badges">${typeBadge}${statusBadge}</div>
         </div>
         <div class="card-meta">
           <span class="meta-item">📅 稼働予定：${liveFormatted}</span>
@@ -155,7 +192,8 @@ function renderProjects() {
     const q = searchQuery.toLowerCase();
     const matchName = p.hospitalName?.toLowerCase().includes(q)??false;
     const matchPerson = !filterPerson||p.mainPerson===filterPerson||p.subPerson===filterPerson;
-    return matchName&&matchPerson;
+    const matchType = (p.projectType||"new") === currentProjectType;
+    return matchName&&matchPerson&&matchType;
   });
   const priority = {delay:0,warning:1,"":2,completed:3};
   filtered.sort((a,b)=>{
@@ -192,17 +230,21 @@ function updateStats() {
 // 進捗
 // =============================================
 async function advanceTask(id, currentTask) {
+  const project = allProjects.find(p=>p.id===id);
+  const tasks = getTasksForType(project?.projectType);
   const nextTask = currentTask+1;
-  if (nextTask>TASKS.length) return;
-  const label = nextTask>=TASKS.length?"全工程完了":TASKS[nextTask];
+  if (nextTask>tasks.length) return;
+  const label = nextTask>=tasks.length?"全工程完了":tasks[nextTask];
   if (!confirm(`現在のタスクを完了にして次へ進みます。\n次：${label}\n\nよろしいですか？`)) return;
   try { await db.collection(BRANCHES[currentBranch].collection).doc(id).update({currentTask:nextTask}); showToast("進捗を更新しました"); }
   catch(e) { showToast("更新に失敗しました","error"); }
 }
 async function revertTask(id, currentTask) {
   if (currentTask<=0) return;
+  const project = allProjects.find(p=>p.id===id);
+  const tasks = getTasksForType(project?.projectType);
   const prevTask = currentTask-1;
-  if (!confirm(`ひとつ前のタスクに戻します。\n戻り先：${TASKS[prevTask]}\n\nよろしいですか？`)) return;
+  if (!confirm(`ひとつ前のタスクに戻します。\n戻り先：${tasks[prevTask]}\n\nよろしいですか？`)) return;
   try { await db.collection(BRANCHES[currentBranch].collection).doc(id).update({currentTask:prevTask}); showToast("タスクを戻しました"); }
   catch(e) { showToast("更新に失敗しました","error"); }
 }
@@ -285,6 +327,9 @@ function openAddModal() {
   document.getElementById("projectForm").reset();
   document.getElementById("editProjectId").value="";
   populateStaffInputs("","");
+  // 現在のタブのタイプをデフォルトにセット
+  document.getElementById("formProjectType").value = currentProjectType;
+  updateFormTaskSelect(currentProjectType);
   document.getElementById("projectModal").classList.add("open");
 }
 
@@ -294,6 +339,8 @@ function openEditModal(id) {
   document.getElementById("editProjectId").value=id;
   document.getElementById("formHospitalName").value =p.hospitalName||"";
   document.getElementById("formGoLiveDate").value   =p.goLiveDate||"";
+  document.getElementById("formProjectType").value  =p.projectType||"new";
+  updateFormTaskSelect(p.projectType||"new");
   document.getElementById("formNewOrExisting").value=p.newOrExisting||"";
   document.getElementById("formSmabe").value        =p.smabe||"";
   document.getElementById("formCurrentTask").value  =p.currentTask??0;
@@ -349,6 +396,7 @@ async function saveProject(e) {
     smabe:           document.getElementById("formSmabe").value.trim(),
     mainPerson:      document.getElementById("formMainPerson").value.trim(),
     subPerson:       document.getElementById("formSubPerson").value.trim(),
+    projectType:     document.getElementById("formProjectType").value || "new",
     currentTask:     parseInt(document.getElementById("formCurrentTask").value)||0,
     keieiShukai:     document.getElementById("formKeieiShukai").value.trim(),
     kyokaBedNum:     document.getElementById("formKyokaBedNum").value.trim(),
@@ -375,6 +423,29 @@ async function saveProject(e) {
     else { data.createdAt=new Date().toISOString(); await db.collection(col).add(data); showToast("案件を登録しました"); }
     closeModal();
   } catch(err) { console.error(err); showToast("保存に失敗しました","error"); }
+}
+
+// =============================================
+// 工程バー更新
+// =============================================
+function updateTaskBar() {
+  const tasks = getTasksForType(currentProjectType);
+  const bar = document.getElementById("taskBar");
+  if (!bar) return;
+  bar.innerHTML = tasks.map((t,i) =>
+    `${i>0?'<span class="task-sep">→</span>':''}<span class="task-item">${t}</span>`
+  ).join("");
+}
+
+// =============================================
+// フォームのタスクセレクト更新
+// =============================================
+function updateFormTaskSelect(type) {
+  const tasks = getTasksForType(type);
+  const taskSel = document.getElementById("formCurrentTask");
+  taskSel.innerHTML =
+    tasks.map((t,i) => `<option value="${i}">${t}</option>`).join("") +
+    `<option value="${tasks.length}">完了（全工程終了）</option>`;
 }
 
 // =============================================
@@ -534,9 +605,20 @@ function showToast(msg, type="success") {
 // 初期化
 // =============================================
 document.addEventListener("DOMContentLoaded",()=>{
-  const taskSel = document.getElementById("formCurrentTask");
-  taskSel.innerHTML=TASKS.map((t,i)=>`<option value="${i}">${t}</option>`).join("")+
-    `<option value="${TASKS.length}">完了（全工程終了）</option>`;
+  // タスクセレクトは openAddModal/openEditModal 時に動的生成するためここでは初期化のみ
+  updateFormTaskSelect("new");
+
+  // タブ切り替え
+  document.querySelectorAll(".project-type-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      currentProjectType = tab.dataset.type;
+      document.querySelectorAll(".project-type-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      // 工程バーも更新
+      updateTaskBar();
+      renderProjects();
+    });
+  });
 
   const saved = new URLSearchParams(window.location.search).get("branch") || localStorage.getItem("selectedBranch");
   if (saved&&BRANCHES[saved]) { currentBranch=saved; document.getElementById("branchSelect").value=saved; }

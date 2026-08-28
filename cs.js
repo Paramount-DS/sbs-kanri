@@ -204,12 +204,8 @@ function getProductLabels(p, longLabel = false) {
   return products;
 }
 
-function normalizeSystemType(value) {
-  return value === "SBS" ? "SBS-Full" : value;
-}
-
 function getSystemLabels(p) {
-  return [p.systemType1, p.systemType2].map(normalizeSystemType).filter(Boolean);
+  return [p.systemType1, p.systemType2].filter(Boolean);
 }
 
 function getLatestVisit(p) {
@@ -276,8 +272,6 @@ const CS_HEALTH_PHASES = [
   { key: "共創", label: "共創", english: "Advocacy", weight: 10 },
 ];
 
-const CS_SYSTEM_MODEL_OPTIONS = ["SBS-Full", "SBS-Lite", "SCAN-Viewer", "Connectハイブリット", "Connectオンプレ"];
-
 function normalizeHealthPhase(status) {
   const normalized = normalizeVisitStatus(status);
   if (normalized === "事例創出") return "共創";
@@ -287,8 +281,7 @@ function normalizeHealthPhase(status) {
 
 function normalizeHealthModel(value) {
   if (value === "Lite") return "SBS-Lite";
-  if (value === "SBS") return "SBS-Full";
-  return CS_SYSTEM_MODEL_OPTIONS.includes(value) ? value : "SBS-Full";
+  return ["SBS", "SBS-Lite", "Connectハイブリット", "Connectオンプレ"].includes(value) ? value : "SBS";
 }
 
 function getCsHealthValues(p) {
@@ -360,7 +353,7 @@ function createCsHealthSection(p) {
       </div>
       <div class="cs-health-settings">
         <label>モデル<select data-health-setting="model" onchange="updateCsHealthSettings('${p.id}')">
-          ${CS_SYSTEM_MODEL_OPTIONS.map(value => `<option value="${value}"${healthModel === value ? " selected" : ""}>${value}</option>`).join("")}
+          ${["SBS","SBS-Lite","Connectハイブリット","Connectオンプレ"].map(value => `<option value="${value}"${healthModel === value ? " selected" : ""}>${value}</option>`).join("")}
         </select></label>
         <label>導入範囲<select data-health-setting="scale" onchange="updateCsHealthSettings('${p.id}')">
           <option value="all"${(p.healthScale || "all") === "all" ? " selected" : ""}>全床導入</option>
@@ -740,8 +733,8 @@ function openCsEditModal(id) {
   document.getElementById("csStartDate").value    = p.startDate || "";
   document.getElementById("csSupportEndDate").value = p.supportEndDate || "";
   document.getElementById("csSolPm").value        = p.solPm || "";
-  document.getElementById("csSystemType1").value  = normalizeSystemType(p.systemType1) || "";
-  document.getElementById("csSystemType2").value  = normalizeSystemType(p.systemType2) || "";
+  document.getElementById("csSystemType1").value  = p.systemType1 || "";
+  document.getElementById("csSystemType2").value  = p.systemType2 || "";
   document.getElementById("csMoveOp").value       = p.moveOp || "";
   document.getElementById("csBedNumStaff").value  = p.bedNumStaff || "";
   document.getElementById("csBedMoveStaff").value = p.bedMoveStaff || "";

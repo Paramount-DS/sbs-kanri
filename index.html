@@ -40,9 +40,15 @@
   </div>
 </header>
 
+<!-- 案件タイプ タブ -->
+<div class="project-type-tabs">
+  <button class="project-type-tab active" data-type="new">🏥 新規導入</button>
+  <button class="project-type-tab" data-type="add">➕ 病棟追加</button>
+  <button class="project-type-tab" data-type="vup">🔄 バージョンアップ</button>
+</div>
+
 <div class="task-list-bar">
-  <div class="task-list-inner">
-    <span class="task-list-title">工程</span>
+  <div class="task-list-inner" id="taskBar">
     <span class="task-item">01 商談中</span><span class="task-sep">→</span>
     <span class="task-item">02 概算見積提出</span><span class="task-sep">→</span>
     <span class="task-item">03 導入環境確認</span><span class="task-sep">→</span>
@@ -99,6 +105,14 @@
         <input type="hidden" id="editProjectId"/>
 
         <div class="form-section-title">基本情報</div>
+        <div class="form-group">
+          <label class="form-label">案件タイプ<span class="required">*</span></label>
+          <select id="formProjectType" class="form-select" onchange="updateFormTaskSelect(this.value)">
+            <option value="new">🏥 新規導入</option>
+            <option value="add">➕ 病棟追加</option>
+            <option value="vup">🔄 バージョンアップ</option>
+          </select>
+        </div>
         <div class="form-group">
           <label class="form-label">病院名<span class="required">*</span></label>
           <input type="text" id="formHospitalName" class="form-input" placeholder="例：○○総合病院" required/>

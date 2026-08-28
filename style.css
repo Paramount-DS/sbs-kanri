@@ -1068,3 +1068,51 @@ body {
 @media (min-width: 1100px) {
   .project-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* =============================================
+   案件タイプ タブ
+   ============================================= */
+.project-type-tabs {
+  background: #fff;
+  border-bottom: 1px solid #e2e6ed;
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.project-type-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: color .15s, border-color .15s;
+}
+.project-type-tab:hover { color: #1a5cb8; }
+.project-type-tab.active {
+  color: #1a5cb8;
+  border-bottom-color: #1a5cb8;
+}
+
+/* 案件タイプバッジ */
+.badge-type {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .project-type-tabs { padding: 0 10px; }
+  .project-type-tab { padding: 10px 12px; font-size: 12px; }
+}
