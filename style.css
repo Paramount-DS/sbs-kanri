@@ -18,6 +18,12 @@
    案件管理ツール - style.css
    ============================================= */
 
+.app-section-nav { display:flex; justify-content:center; gap:8px; padding:9px 16px; background:#fff; border-bottom:1px solid #dfe4ea; box-shadow:0 1px 4px rgba(31,41,55,.06); overflow-x:auto; }
+.app-section-nav a { flex:0 0 auto; padding:8px 16px; border:1px solid #cbd5e1; border-radius:8px; color:#334155; background:#fff; font-size:13px; font-weight:700; text-decoration:none; }
+.app-section-nav a:hover { background:#f1f5f9; }
+.app-section-nav a.active { border-color:#1a5cb8; background:#1a5cb8; color:#fff; }
+@media (max-width:600px) { .app-section-nav { justify-content:flex-start; padding:8px 10px; } .app-section-nav a { padding:7px 12px; font-size:12px; } }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
