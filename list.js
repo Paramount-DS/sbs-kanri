@@ -2,11 +2,24 @@
 // 統合版 全ステータス一覧 - list.js
 // =============================================
 
-const TASKS = [
-  "01 商談中","02 概算見積もり（参考価格書）提出","03 導入環境確認（仮想／NW環境含む）",
-  "04 仕入れ見積もり取得","05 最終見積提出","06 カスタマーサクセス打合せ",
-  "07 受注","08 社内キックオフ","09 システム構築準備期間","10 稼働（立会等）","11 稼働後フォロー",
-];
+const TASKS_MAP = {
+  new: [
+    "01 商談中","02 概算見積提出","03 導入環境確認",
+    "04 仕入れ見積取得","05 最終見積提出","06 CS打合せ",
+    "07 受注","08 社内キックオフ","09 システム構築準備","10 稼働","11 稼働後フォロー",
+  ],
+  add: [
+    "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
+  ],
+  vup: [
+    "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
+  ],
+};
+const TASKS = TASKS_MAP.new;
+
+function getTasksForType(type) {
+  return TASKS_MAP[type || "new"] || TASKS_MAP.new;
+}
 
 const BRANCHES = {
   nagoya:   { label:"名古屋支店", collection:"nagoya_projects",   color:"#1a5cb8" },
@@ -30,13 +43,21 @@ function checkDelay(project) {
   const live = new Date(project.goLiveDate);
   const d = Math.ceil((live-today)/(1000*60*60*24));
   const t = project.currentTask;
-  if (t >= TASKS.length) return "completed";
-  if (t <= 9 && d < -1)   return "warning";
-  if (t < 8  && d <= 170) return "delay";
-  if (t < 7  && d <= 180) return "delay";
-  if (t < 5  && d <= 190) return "delay";
-  if (t < 3  && d <= 210) return "delay";
-  if (t === 0 && d <= 240) return "warning";
+  const ptype = project.projectType || "new";
+  const tasks = getTasksForType(ptype);
+  if (t >= tasks.length) return "completed";
+  if (ptype === "new") {
+    if (t <= 9 && d < -1)   return "warning";
+    if (t < 8  && d <= 170) return "delay";
+    if (t < 7  && d <= 180) return "delay";
+    if (t < 5  && d <= 190) return "delay";
+    if (t < 3  && d <= 210) return "delay";
+    if (t === 0 && d <= 240) return "warning";
+  } else {
+    if (d < -1) return "warning";
+    if (t < 3 && d <= 60) return "delay";
+    if (t === 0 && d <= 90) return "warning";
+  }
   return "";
 }
 
@@ -71,8 +92,9 @@ function renderTable() {
   tbody.innerHTML = filtered.map(p=>{
     const status = checkDelay(p);
     const {text,cls} = statusLabel(status);
-    const isCompleted = p.currentTask>=TASKS.length;
-    const taskLabel = isCompleted?"✅ 全工程完了":(TASKS[p.currentTask]||"―");
+    const ptasks = getTasksForType(p.projectType);
+    const isCompleted = p.currentTask>=ptasks.length;
+    const taskLabel = isCompleted?"✅ 全工程完了":(ptasks[p.currentTask]||"―");
     const live = new Date(p.goLiveDate);
     const today = new Date(); today.setHours(0,0,0,0);
     const d = p.goLiveDate?Math.ceil((live-today)/(1000*60*60*24)):null;

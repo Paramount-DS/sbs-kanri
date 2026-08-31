@@ -12,9 +12,9 @@ const PROJECT_TYPES = {
 // タイプ別工程ステップ
 const TASKS_MAP = {
   new: [
-    "01 商談中","02 概算見積もり（参考価格書）提出","03 導入環境確認（仮想／NW環境含む）",
-    "04 仕入れ見積もり取得","05 最終見積提出","06 カスタマーサクセス打合せ",
-    "07 受注","08 社内キックオフ","09 システム構築準備期間","10 稼働（立会等）","11 稼働後フォロー",
+    "01 商談中","02 概算見積提出","03 導入環境確認",
+    "04 仕入れ見積取得","05 最終見積提出","06 CS打合せ",
+    "07 受注","08 社内キックオフ","09 システム構築準備","10 稼働","11 稼働後フォロー",
   ],
   add: [
     "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
@@ -196,7 +196,8 @@ function renderProjects() {
     const q = searchQuery.toLowerCase();
     const matchName = p.hospitalName?.toLowerCase().includes(q)??false;
     const matchPerson = !filterPerson||p.mainPerson===filterPerson||p.subPerson===filterPerson;
-    const matchType = (p.projectType||"new") === currentProjectType;
+    const pt = p.projectType || "new";
+    const matchType = pt === currentProjectType;
     return matchName&&matchPerson&&matchType;
   });
   const priority = {delay:0,warning:1,"":2,completed:3};
@@ -647,4 +648,5 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("deletePassword").addEventListener("keydown",e=>{ if(e.key==="Enter") confirmDelete(); });
 
   switchBranch(currentBranch);
+  updateTaskBar();
 });
