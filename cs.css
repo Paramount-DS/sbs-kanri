@@ -88,7 +88,7 @@
 .cs-phase-item strong { color: #7f3f5b; font-size: 12px; line-height: 1.25; }
 .cs-phase-item small { color: #9d4c6e; font-size: 10px; line-height: 1.25; }
 .cs-phase-arrow { color: #b86d8b; font-size: 12px; font-weight: 400; flex-shrink: 0; }
-.cs-branch-bar { background:#fff7fb; border-bottom:1px solid var(--cs-rose); padding:8px 20px; overflow-x:auto; }
+.cs-branch-bar { background:#fff7fb; border-bottom:1px solid var(--cs-rose); padding:8px 20px; overflow-x:auto; position:sticky; top:56px; z-index:119; box-shadow:0 2px 5px rgba(42,48,60,.06); }
 .cs-branch-tabs { max-width:1200px; margin:0 auto; display:flex; gap:6px; min-width:max-content; }
 .cs-branch-tab { border:1px solid #dca3ba; border-radius:999px; background:#fff; color:#7f3f5b; padding:7px 13px; font:inherit; cursor:pointer; }
 .cs-branch-tab span { margin-left:5px; color:#a96a85; font-size:10px; }
@@ -110,7 +110,7 @@
 .cs-red .cs-stat-num    { color: var(--cs-red); }
 
 /* CS検索バー */
-.cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; position: sticky; top: 56px; z-index: 110; box-shadow: 0 2px 6px rgba(42,48,60,.08); }
+.cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; position: sticky; top: 105px; z-index: 110; box-shadow: 0 2px 6px rgba(42,48,60,.08); }
 .cs-search-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 /* CSメイン */
@@ -308,6 +308,9 @@
 
 /* スマホ */
 @media (max-width: 600px) {
+  .cs-app-header { position: relative; }
+  .cs-branch-bar { top: 0; }
+  .cs-search-bar { top: 49px; }
   .cs-grid { grid-template-columns: 1fr !important; gap: 12px; }
   .cs-card-actions { flex-direction: column; }
   .btn-cs-next { width: 100%; }
