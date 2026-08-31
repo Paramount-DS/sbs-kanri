@@ -29,21 +29,9 @@
   </div>
 </header>
 
-<div class="cs-phase-bar">
-  <div class="cs-phase-inner">
-    <span class="cs-phase-item"><strong>支援計画</strong><small>Deployment</small></span>
-    <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>定着</strong><small>Adoption</small></span>
-    <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>活用促進</strong><small>Engagement</small></span>
-    <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>成果創出</strong><small>Outcome/ROI</small></span>
-    <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>拡大</strong><small>Expansion</small></span>
-    <span class="cs-phase-arrow">-</span>
-    <span class="cs-phase-item"><strong>共創</strong><small>Advocacy</small></span>
-  </div>
-</div>
+<nav class="cs-branch-bar" aria-label="支店で絞り込み">
+  <div class="cs-branch-tabs" id="csBranchTabs"></div>
+</nav>
 
 <!-- 統計バー -->
 <div class="cs-stats-bar">
@@ -67,6 +55,12 @@
     <select id="csStaffFilter" class="filter-select"><option value="">全員表示</option></select>
     <select id="csStateFilter" class="filter-select"><option value="">全状態</option></select>
     <select id="csStatusFilter" class="filter-select"><option value="">全CSステータス</option></select>
+    <label class="cs-column-control">列数
+      <select id="csColumnCount" class="filter-select" aria-label="カードの列数">
+        <option value="3">3列</option><option value="4">4列</option><option value="5">5列</option>
+      </select>
+    </label>
+    <button type="button" class="btn-cs-export" onclick="exportCsActivitiesXlsx()">活動内容Excel出力</button>
     <span class="count-label"><span id="csProjectCount">0 件</span>表示中</span>
   </div>
 </div>
@@ -93,6 +87,10 @@
         <input type="hidden" id="csEditId"/>
 
         <div class="cs-section-title">基本情報</div>
+        <div class="form-group">
+          <label class="form-label">支店 <span class="required">*</span></label>
+          <select id="csBranch" class="form-select" required></select>
+        </div>
         <div class="form-group">
           <label class="form-label">病院名<span class="required">*</span></label>
           <input type="text" id="csHospitalName" class="form-input" placeholder="例：○○総合病院" required/>
@@ -215,6 +213,10 @@
           <label class="form-label">フェーズ項目</label>
           <select id="visitTaskItem" class="status-select-cs" onchange="updateVisitTaskDetail()"></select>
         </div>
+        <div class="form-group">
+          <label class="form-label">対応者</label>
+          <input type="text" id="visitAssignee" class="form-input" placeholder="対応者名を入力" autocomplete="off"/>
+        </div>
         <div id="visitTaskDetail" class="visit-task-detail"></div>
         <div class="form-group">
           <label class="form-label">達成度 <strong id="visitScoreValue">0</strong></label>
@@ -334,6 +336,7 @@
 
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="cs-card-data.js"></script>
 <script src="cs.js"></script>
 </body>

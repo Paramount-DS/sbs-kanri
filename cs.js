@@ -105,6 +105,9 @@ let csSearchQuery = "";
 let csFilterPerson = "";
 let csFilterState = "";
 let csFilterStatus = "";
+const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
+let csFilterBranch = "";
+let csColumnCount = Number(localStorage.getItem("csColumnCount")) || 3;
 let pendingCsDeleteId = null;
 
 // =============================================
@@ -447,6 +450,7 @@ function createCsCard(p) {
           <span class="cs-visit-date">${dateStr}</span>
         </div>
         ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(v.taskItem)}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
+        ${v.assignee ? `<div class="cs-visit-assignee">対応者：${escapeHtml(v.assignee)}</div>` : ""}
         ${v.freeText ? `<div class="cs-visit-text">${escapeHtml(v.freeText)}</div>` : ""}
       </div>`;
   }).join("");
@@ -462,6 +466,7 @@ function createCsCard(p) {
         <div class="cs-card-identity">
           <div class="cs-card-title">${escapeHtml(p.hospitalName)}${duplicateBadge}</div>
           <div class="cs-card-sub">
+            ${p.branch ? `<span class="cs-meta-tag cs-meta-branch">${escapeHtml(p.branch)}支店</span>` : ""}
             <span class="cs-meta-tag cs-meta-date">稼働 ${startFmt}</span>
             ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">担当 ${escapeHtml(p.csPerson)}</span>` : ""}
           </div>
@@ -499,7 +504,8 @@ function renderCsProjects() {
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
     const matchState = !csFilterState || getCsStateGroup(p) === csFilterState;
     const matchStatus = !csFilterStatus || normalizeVisitStatus(getLatestVisit(p)?.status) === csFilterStatus;
-    return matchName && matchPerson && matchState && matchStatus;
+    const matchBranch = !csFilterBranch || p.branch === csFilterBranch;
+    return matchName && matchPerson && matchState && matchStatus && matchBranch;
   });
 
   const statePri={normal:0,problem:1,issue:2};
@@ -575,23 +581,74 @@ function renderCsView() {
   else renderCsProjects();
 }
 
+function renderCsBranchTabs() {
+  const tabs = document.getElementById("csBranchTabs");
+  if (!tabs) return;
+  const branches = ["", ...CS_BRANCHES];
+  tabs.innerHTML = branches.map(branch => {
+    const label = branch || "すべて";
+    const count = branch ? allCsProjects.filter(p => p.branch === branch).length : allCsProjects.length;
+    return `<button type="button" class="cs-branch-tab${branch === csFilterBranch ? " active" : ""}" data-branch="${escapeHtml(branch)}">${label}<span>${count}</span></button>`;
+  }).join("");
+  tabs.querySelectorAll(".cs-branch-tab").forEach(button => button.addEventListener("click", () => {
+    csFilterBranch = button.dataset.branch || "";
+    renderCsBranchTabs();
+    renderCsView();
+  }));
+}
+
+function applyCsColumnCount(value) {
+  csColumnCount = [3,4,5].includes(Number(value)) ? Number(value) : 3;
+  localStorage.setItem("csColumnCount", String(csColumnCount));
+  const grid = document.getElementById("csProjectList");
+  if (grid) grid.dataset.columns = String(csColumnCount);
+  const select = document.getElementById("csColumnCount");
+  if (select) select.value = String(csColumnCount);
+}
+
+function exportCsActivitiesXlsx() {
+  if (typeof XLSX === "undefined") { showToast("Excel出力機能を読み込めませんでした", "error"); return; }
+  const projects = allCsProjects.filter(p => !csFilterBranch || p.branch === csFilterBranch);
+  const rows = [["項目名","病院名","直近活動日","対応者","直近活動内容","最終活動日","活動総数"]];
+  projects.forEach(p => {
+    const visits = p.visits || [];
+    const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
+    const date = latest.endDate || latest.startDate || "";
+    rows.push([latest.taskItem || "", p.hospitalName || "", date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
+  });
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet["!cols"] = [{wch:22},{wch:28},{wch:14},{wch:16},{wch:50},{wch:14},{wch:12}];
+  sheet["!autofilter"] = { ref:`A1:G${Math.max(1, rows.length)}` };
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "活動内容");
+  XLSX.writeFile(book, `パラサイト_活動内容_${csFilterBranch || "全支店"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${projects.length}件の活動内容を出力しました`);
+}
+
 function updateCsStats() {
   const total = document.getElementById("csTotalStat");
   const green = document.getElementById("csGreenStat");
   const yellow = document.getElementById("csYellowStat");
   const orange = document.getElementById("csOrangeStat");
   const red = document.getElementById("csRedStat");
-  if (total)  total.textContent  = allCsProjects.length;
-  if (green)  green.textContent  = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-green").length;
-  if (yellow) yellow.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-yellow").length;
-  if (orange) orange.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-orange").length;
-  if (red) red.textContent = allCsProjects.filter(p => getCsHealth(p).className === "cs-status-red").length;
+  const scoped = csFilterBranch ? allCsProjects.filter(p => p.branch === csFilterBranch) : allCsProjects;
+  if (total)  total.textContent  = scoped.length;
+  if (green)  green.textContent  = scoped.filter(p => getCsHealth(p).className === "cs-status-green").length;
+  if (yellow) yellow.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-yellow").length;
+  if (orange) orange.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-orange").length;
+  if (red) red.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-red").length;
 }
 
 // =============================================
 // Firestore リアルタイム同期
 // =============================================
 function initCs() {
+  renderCsBranchTabs();
+  applyCsColumnCount(csColumnCount);
+  const columnSelect = document.getElementById("csColumnCount");
+  if (columnSelect) columnSelect.addEventListener("change", e => applyCsColumnCount(e.target.value));
+  const branchSelect = document.getElementById("csBranch");
+  if (branchSelect) branchSelect.innerHTML = `<option value="">-- 選択 --</option>` + CS_BRANCHES.map(branch => `<option value="${branch}">${branch}</option>`).join("");
   // 検索
   const searchInput = document.getElementById("csSearchInput");
   if (searchInput) {
@@ -667,6 +724,7 @@ function initCs() {
       allCsProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateCsStaffFilter();
       populateCsStaffSelect();
+      renderCsBranchTabs();
       renderCsView();
     }, err => {
       console.error("CS Firestore error:", err);
@@ -728,6 +786,7 @@ function openCsEditModal(id) {
   if (!p) return;
   document.getElementById("csModalTitle").textContent = "CS案件 編集";
   document.getElementById("csEditId").value       = id;
+  document.getElementById("csBranch").value       = p.branch || "";
   document.getElementById("csHospitalName").value = p.hospitalName || "";
   document.getElementById("csWard").value         = p.ward || "";
   document.getElementById("csStartDate").value    = p.startDate || "";
@@ -762,6 +821,7 @@ async function saveCsProject(e) {
   const id = document.getElementById("csEditId").value;
   const data = {
     type:          "cs",
+    branch:        document.getElementById("csBranch").value,
     hospitalName:  document.getElementById("csHospitalName").value.trim(),
     ward:          document.getElementById("csWard").value.trim(),
     startDate:     document.getElementById("csStartDate").value,
@@ -784,6 +844,7 @@ async function saveCsProject(e) {
     hasNurse:      document.getElementById("csHasNurse").checked,
     hasNcNotify:   document.getElementById("csHasNcNotify").checked,
   };
+  if (!data.branch) { showToast("支店を選択してください", "error"); return; }
   if (!data.hospitalName) { showToast("病院名を入力してください", "error"); return; }
   try {
     if (id) {
@@ -842,11 +903,13 @@ function openVisitModal(projectId, editIndex = -1) {
     document.getElementById("visitStartDate").value = targetVisit.startDate || "";
     document.getElementById("visitEndDate").value = targetVisit.endDate || "";
     document.getElementById("visitFreeText").value = targetVisit.freeText || "";
+    document.getElementById("visitAssignee").value = targetVisit.assignee || "";
     document.getElementById("visitScore").value = Number(targetVisit.score) || 0;
     document.getElementById("visitScoreValue").textContent = String(Number(targetVisit.score) || 0);
   } else {
     document.getElementById("visitStatus").value = normalizeVisitStatus(getLatestVisit(p)?.status || "支援計画");
     updateVisitTaskOptions();
+    document.getElementById("visitAssignee").value = p.csPerson || "";
   }
   document.getElementById("visitModal").classList.add("open");
 }
@@ -871,6 +934,7 @@ async function saveVisit(e) {
   const visit = {
     status:    document.getElementById("visitStatus").value,
     taskItem:  document.getElementById("visitTaskItem").value,
+    assignee:  document.getElementById("visitAssignee").value.trim(),
     score:     Math.max(0, Math.min(100, Number(document.getElementById("visitScore").value) || 0)),
     startDate: document.getElementById("visitStartDate").value,
     endDate:   document.getElementById("visitEndDate").value,

@@ -88,6 +88,14 @@
 .cs-phase-item strong { color: #7f3f5b; font-size: 12px; line-height: 1.25; }
 .cs-phase-item small { color: #9d4c6e; font-size: 10px; line-height: 1.25; }
 .cs-phase-arrow { color: #b86d8b; font-size: 12px; font-weight: 400; flex-shrink: 0; }
+.cs-branch-bar { background:#fff7fb; border-bottom:1px solid var(--cs-rose); padding:8px 20px; overflow-x:auto; }
+.cs-branch-tabs { max-width:1200px; margin:0 auto; display:flex; gap:6px; min-width:max-content; }
+.cs-branch-tab { border:1px solid #dca3ba; border-radius:999px; background:#fff; color:#7f3f5b; padding:7px 13px; font:inherit; cursor:pointer; }
+.cs-branch-tab span { margin-left:5px; color:#a96a85; font-size:10px; }
+.cs-branch-tab.active { background:var(--cs-primary); border-color:var(--cs-primary); color:#fff; font-weight:700; }
+.cs-branch-tab.active span { color:#fff; opacity:.8; }
+.cs-column-control { display:flex; align-items:center; gap:5px; color:#5a6475; font-size:12px; white-space:nowrap; }
+.btn-cs-export { border:1px solid var(--cs-primary); border-radius:6px; background:#fff; color:var(--cs-primary); padding:8px 11px; font-weight:700; cursor:pointer; }
 
 /* CS統計バー */
 .cs-stats-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 10px 20px; }
@@ -109,6 +117,11 @@
 /* CSメイン */
 .cs-main-content { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+@media (min-width: 1100px) {
+  .cs-grid[data-columns="3"] { grid-template-columns:repeat(3,minmax(0,1fr)); max-width:1800px; }
+  .cs-grid[data-columns="4"] { grid-template-columns:repeat(4,minmax(0,1fr)); max-width:2200px; }
+  .cs-grid[data-columns="5"] { grid-template-columns:repeat(5,minmax(0,1fr)); max-width:2600px; }
+}
 
 /* CSカード */
 .cs-card {
@@ -321,6 +334,8 @@
 .cs-meta-tag { padding: 3px 8px; background: rgba(255,255,255,.78); border: 1px solid rgba(239,149,181,.24); font-size: 10px; }
 .cs-meta-date { color: #b25b7d; }
 .cs-meta-person { color: #76507c; }
+.cs-meta-branch { color:#8c3e62; background:#ffeaf2; }
+.cs-visit-assignee { margin:4px 0 0 28px; color:#76507c; font-size:10px; font-weight:700; }
 .cs-card-state-field { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 7px; min-width: 0; }
 .cs-card-state-field > span { color: #596579; font-size: 10px; font-weight: 800; }
 .cs-card-state-select { padding: 8px 9px; border-color: rgba(239,149,181,.42); background: rgba(255,255,255,.92); font-size: 11px; }
