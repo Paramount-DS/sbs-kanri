@@ -18,6 +18,14 @@ const CS_STATE_OPTIONS = [
 
 const CS_PHASES = [
   {
+    key: "操作学習",
+    label: "操作学習",
+    goal: "On-boarding",
+    items: [
+      { item:"勉強会", content:"操作方法の勉強会を実施", effect:"基本操作の習得とスムーズな利用開始" },
+    ],
+  },
+  {
     key: "支援計画",
     label: "支援計画",
     goal: "早期稼働",
@@ -107,7 +115,6 @@ let csFilterState = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 let csFilterBranch = "";
-let csColumnCount = Number(localStorage.getItem("csColumnCount")) || 3;
 let pendingCsDeleteId = null;
 
 // =============================================
@@ -218,6 +225,7 @@ function getLatestVisit(p) {
 
 function getVisitStatusLabel(status) {
   const labels = {
+    "操作学習": "操作学習/On-boarding",
     "支援計画": "支援計画/Deployment",
     "定着": "定着/Adoption",
     "活用促進": "活用促進/Engagement",
@@ -227,17 +235,17 @@ function getVisitStatusLabel(status) {
     "共創": "共創/Advocacy",
     "拡大/事例創出": "拡大/Expansion",
   };
-  if (status === "onboarding" || status === "OBD") return labels["支援計画"];
+  if (status === "onboarding" || status === "OBD") return labels["操作学習"];
   if (status === "support" || status === "SUP" || status === "活用") return labels["活用促進"];
   return labels[status] || status || "—";
 }
 
 function normalizeVisitStatus(status) {
-  if (status === "onboarding" || status === "OBD") return "支援計画";
+  if (status === "onboarding" || status === "OBD") return "操作学習";
   if (status === "support" || status === "SUP" || status === "活用") return "活用促進";
   if (status === "事例創出") return "共創";
   if (status === "拡大/事例創出") return "拡大";
-  return status || "支援計画";
+  return status || "操作学習";
 }
 
 function isSupportSideStatus(status) {
@@ -267,8 +275,9 @@ function getCsState(p) {
 }
 
 const CS_HEALTH_PHASES = [
-  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 15 },
-  { key: "定着", label: "定着", english: "Adoption", weight: 20 },
+  { key: "操作学習", label: "操作学習", english: "On-boarding", weight: 10 },
+  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 10 },
+  { key: "定着", label: "定着", english: "Adoption", weight: 15 },
   { key: "活用促進", label: "活用促進", english: "Engagement", weight: 20 },
   { key: "成果創出", label: "成果創出", english: "Outcome/ROI", weight: 20 },
   { key: "拡大", label: "拡大", english: "Expansion", weight: 15 },
@@ -331,14 +340,15 @@ function getCsHealth(p) {
 }
 
 function getCsHealthActions(values, currentIndex) {
-  if (currentIndex < 0) return ["次の訪問追加から支援計画の達成度を登録してください。"];
+  if (currentIndex < 0) return ["次の訪問追加から操作学習の達成度を登録してください。"];
   const actions = [];
-  if (currentIndex >= 0 && values["支援計画"] < 70) actions.push("Deployment：未導入範囲・未教育者を確認し、初期稼働条件を再整理する。");
-  if (currentIndex >= 1 && values["定着"] < 70) actions.push("Adoption：利用ログを確認し、未活用機能・未利用部署への再教育を実施する。");
-  if (currentIndex >= 2 && values["活用促進"] < 70) actions.push("Engagement：定例会・管理者面談を設定し、現場課題を改善アクションに落とす。");
-  if (currentIndex >= 3 && values["成果創出"] < 70) actions.push("Outcome/ROI：成果指標と費用対効果の根拠を整理する。");
-  if (currentIndex >= 4 && values["拡大"] < 70) actions.push("Expansion：更新・追加導入・他部署展開の提案条件を整理する。");
-  if (currentIndex >= 5 && values["共創"] < 70) actions.push("Advocacy：事例化・紹介・共同プロジェクトの候補を整理する。");
+  if (currentIndex >= 0 && values["操作学習"] < 70) actions.push("On-boarding：勉強会を実施し、基本操作の習得状況を確認する。");
+  if (currentIndex >= 1 && values["支援計画"] < 70) actions.push("Deployment：未導入範囲・未教育者を確認し、初期稼働条件を再整理する。");
+  if (currentIndex >= 2 && values["定着"] < 70) actions.push("Adoption：利用ログを確認し、未活用機能・未利用部署への再教育を実施する。");
+  if (currentIndex >= 3 && values["活用促進"] < 70) actions.push("Engagement：定例会・管理者面談を設定し、現場課題を改善アクションに落とす。");
+  if (currentIndex >= 4 && values["成果創出"] < 70) actions.push("Outcome/ROI：成果指標と費用対効果の根拠を整理する。");
+  if (currentIndex >= 5 && values["拡大"] < 70) actions.push("Expansion：更新・追加導入・他部署展開の提案条件を整理する。");
+  if (currentIndex >= 6 && values["共創"] < 70) actions.push("Advocacy：事例化・紹介・共同プロジェクトの候補を整理する。");
   if (!actions.length) actions.push("全体状態は良好。更新・追加導入・他部署展開の提案タイミング。");
   return actions;
 }
@@ -597,17 +607,29 @@ function renderCsBranchTabs() {
   }));
 }
 
-function applyCsColumnCount(value) {
-  csColumnCount = [3,4,5].includes(Number(value)) ? Number(value) : 3;
-  localStorage.setItem("csColumnCount", String(csColumnCount));
-  const grid = document.getElementById("csProjectList");
-  if (grid) grid.dataset.columns = String(csColumnCount);
-  const select = document.getElementById("csColumnCount");
-  if (select) select.value = String(csColumnCount);
+function loadXlsxLibrary() {
+  if (typeof XLSX !== "undefined") return Promise.resolve();
+  const sources = [
+    "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"
+  ];
+  return new Promise((resolve, reject) => {
+    const tryNext = index => {
+      if (index >= sources.length) { reject(new Error("Excelライブラリを読み込めませんでした")); return; }
+      const script = document.createElement("script");
+      script.src = sources[index];
+      script.onload = () => typeof XLSX !== "undefined" ? resolve() : tryNext(index + 1);
+      script.onerror = () => tryNext(index + 1);
+      document.head.appendChild(script);
+    };
+    tryNext(0);
+  });
 }
 
-function exportCsActivitiesXlsx() {
-  if (typeof XLSX === "undefined") { showToast("Excel出力機能を読み込めませんでした", "error"); return; }
+async function exportCsActivitiesXlsx() {
+  try { await loadXlsxLibrary(); }
+  catch (error) { showToast(error.message, "error"); return; }
   const projects = allCsProjects.filter(p => !csFilterBranch || p.branch === csFilterBranch);
   const rows = [["項目名","病院名","直近活動日","対応者","直近活動内容","最終活動日","活動総数"]];
   projects.forEach(p => {
@@ -644,9 +666,6 @@ function updateCsStats() {
 // =============================================
 function initCs() {
   renderCsBranchTabs();
-  applyCsColumnCount(csColumnCount);
-  const columnSelect = document.getElementById("csColumnCount");
-  if (columnSelect) columnSelect.addEventListener("change", e => applyCsColumnCount(e.target.value));
   const branchSelect = document.getElementById("csBranch");
   if (branchSelect) branchSelect.innerHTML = `<option value="">-- 選択 --</option>` + CS_BRANCHES.map(branch => `<option value="${branch}">${branch}</option>`).join("");
   // 検索
@@ -907,7 +926,7 @@ function openVisitModal(projectId, editIndex = -1) {
     document.getElementById("visitScore").value = Number(targetVisit.score) || 0;
     document.getElementById("visitScoreValue").textContent = String(Number(targetVisit.score) || 0);
   } else {
-    document.getElementById("visitStatus").value = normalizeVisitStatus(getLatestVisit(p)?.status || "支援計画");
+    document.getElementById("visitStatus").value = normalizeVisitStatus(getLatestVisit(p)?.status || "操作学習");
     updateVisitTaskOptions();
     document.getElementById("visitAssignee").value = p.csPerson || "";
   }

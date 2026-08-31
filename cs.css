@@ -94,7 +94,6 @@
 .cs-branch-tab span { margin-left:5px; color:#a96a85; font-size:10px; }
 .cs-branch-tab.active { background:var(--cs-primary); border-color:var(--cs-primary); color:#fff; font-weight:700; }
 .cs-branch-tab.active span { color:#fff; opacity:.8; }
-.cs-column-control { display:flex; align-items:center; gap:5px; color:#5a6475; font-size:12px; white-space:nowrap; }
 .btn-cs-export { border:1px solid var(--cs-primary); border-radius:6px; background:#fff; color:var(--cs-primary); padding:8px 11px; font-weight:700; cursor:pointer; }
 
 /* CS統計バー */
@@ -117,11 +116,6 @@
 /* CSメイン */
 .cs-main-content { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-@media (min-width: 1100px) {
-  .cs-grid[data-columns="3"] { grid-template-columns:repeat(3,minmax(0,1fr)); max-width:1800px; }
-  .cs-grid[data-columns="4"] { grid-template-columns:repeat(4,minmax(0,1fr)); max-width:2200px; }
-  .cs-grid[data-columns="5"] { grid-template-columns:repeat(5,minmax(0,1fr)); max-width:2600px; }
-}
 
 /* CSカード */
 .cs-card {
@@ -314,7 +308,7 @@
 
 /* スマホ */
 @media (max-width: 600px) {
-  .cs-grid { grid-template-columns: 1fr; gap: 12px; }
+  .cs-grid { grid-template-columns: 1fr !important; gap: 12px; }
   .cs-card-actions { flex-direction: column; }
   .btn-cs-next { width: 100%; }
   .cs-task-controls { grid-template-columns: 1fr; }

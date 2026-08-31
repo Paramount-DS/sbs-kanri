@@ -2,7 +2,7 @@
 
 const DASHBOARD_DEFAULTS = {
   version: 1,
-  currentPhase: "支援計画",
+  currentPhase: "操作学習",
   dataSources: {
     automaticFields: ["loginCount","activeUsers","usageDays","usedFeatures","alertCount","dataViews","dashboardViews","connectedDevices","inquiryCount","unresolvedIssues","visits","renewalDate"],
     manualFields: ["kpiTarget","kpiCurrent","monthlySavedHours","hourlyLaborCost","renewalProbability","caseStudy","visitAcceptance","speakingSupport","memo"],

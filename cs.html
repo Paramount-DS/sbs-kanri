@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css"/>
+  <link rel="stylesheet" href="cs.css?v=20260831-3"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -55,11 +55,6 @@
     <select id="csStaffFilter" class="filter-select"><option value="">全員表示</option></select>
     <select id="csStateFilter" class="filter-select"><option value="">全状態</option></select>
     <select id="csStatusFilter" class="filter-select"><option value="">全CSステータス</option></select>
-    <label class="cs-column-control">列数
-      <select id="csColumnCount" class="filter-select" aria-label="カードの列数">
-        <option value="3">3列</option><option value="4">4列</option><option value="5">5列</option>
-      </select>
-    </label>
     <button type="button" class="btn-cs-export" onclick="exportCsActivitiesXlsx()">活動内容Excel出力</button>
     <span class="count-label"><span id="csProjectCount">0 件</span>表示中</span>
   </div>
@@ -201,6 +196,7 @@
         <div class="form-group">
           <label class="form-label">現在のフェーズ / 次の訪問ステータス</label>
           <select id="visitStatus" class="status-select-cs" onchange="updateVisitTaskOptions()">
+            <option value="操作学習">操作学習/On-boarding</option>
             <option value="支援計画">支援計画/Deployment</option>
             <option value="定着">定着/Adoption</option>
             <option value="活用促進">活用促進/Engagement</option>
@@ -336,8 +332,7 @@
 
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="cs-card-data.js"></script>
-<script src="cs.js"></script>
+<script src="cs.js?v=20260831-3"></script>
 </body>
 </html>
