@@ -6,7 +6,7 @@
   <title>案件管理ツール</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css?v=20260901-1"/>
+  <link rel="stylesheet" href="style.css?v=20260901-2"/>
   <link rel="stylesheet" href="auth.css"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -31,15 +31,19 @@
         </select>
       </div>
     </div>
+    <nav class="header-main-nav" aria-label="メイン機能">
+      <a href="index.html" class="active">案件管理</a>
+      <a href="cs.html">導入支援</a>
+      <a href="schedule.html#calendar">カレンダー</a>
+      <a href="schedule.html#timeline">工程表</a>
+    </nav>
     <div class="header-actions">
       <a href="list.html" class="btn-list-view" id="listViewBtn">一覧表示</a>
       <button class="btn-import" onclick="openImportModal()">JSON取込</button>
       <button class="btn-add-main" onclick="openAddModal()">＋ 新規案件登録</button>
-      <a href="cs.html" class="btn-cs-entry">導入支援</a>
     </div>
   </div>
 </header>
-<nav class="app-section-nav" aria-label="メイン機能"><a href="index.html" class="active">案件管理</a><a href="cs.html">導入支援</a><a href="schedule.html#calendar">カレンダー</a><a href="schedule.html#timeline">工程表</a></nav>
 
 <!-- 案件タイプ タブ -->
 <div class="project-type-tabs">

@@ -23,6 +23,10 @@
 .app-section-nav a:hover { background:#f1f5f9; }
 .app-section-nav a.active { border-color:#1a5cb8; background:#1a5cb8; color:#fff; }
 @media (max-width:600px) { .app-section-nav { justify-content:flex-start; padding:8px 10px; } .app-section-nav a { padding:7px 12px; font-size:12px; } }
+.header-main-nav { display:flex; align-items:center; justify-content:center; gap:5px; min-width:0; }
+.header-main-nav a { flex:0 0 auto; padding:7px 10px; border:1px solid #d4dbe4; border-radius:7px; background:#fff; color:#334155; font-size:12px; font-weight:700; line-height:1; text-decoration:none; white-space:nowrap; }
+.header-main-nav a:hover { background:#f1f5f9; }
+.header-main-nav a.active { border-color:#1a5cb8; background:#1a5cb8; color:#fff; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1010,6 +1014,8 @@ body {
     gap: 6px !important;
     justify-content: stretch !important;
   }
+  .header-main-nav { width:100%; justify-content:flex-start; overflow-x:auto; padding-bottom:2px; }
+  .header-main-nav a { flex:1 0 auto; text-align:center; padding:7px 9px; font-size:11px; }
   .btn-list-view, .btn-cs-entry, .btn-import, .btn-add-main {
     flex: 1 !important;
     font-size: 11px !important;
