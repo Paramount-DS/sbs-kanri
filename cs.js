@@ -133,10 +133,20 @@ function normalizeHospitalName(name) {
   return String(name || "").replace(/\s+/g, "").toLowerCase();
 }
 
+function getHospitalDisplayParts(project) {
+  const hospitalName = String(project?.hospitalName || "").trim();
+  const quickMemo = String(project?.quickMemo || "").trim();
+  if (quickMemo) return { hospitalName, quickMemo };
+  const legacyMatch = hospitalName.match(/^(.*?)[\s　]+([0-9０-９]+枚)$/);
+  return legacyMatch
+    ? { hospitalName: legacyMatch[1].trim(), quickMemo: legacyMatch[2] }
+    : { hospitalName, quickMemo: "" };
+}
+
 function isDuplicateCsHospital(project, projects = allCsProjects) {
-  const name = normalizeHospitalName(project.hospitalName);
+  const name = normalizeHospitalName(getHospitalDisplayParts(project).hospitalName);
   if (!name) return false;
-  return projects.filter(p => normalizeHospitalName(p.hospitalName) === name).length > 1;
+  return projects.filter(p => normalizeHospitalName(getHospitalDisplayParts(p).hospitalName) === name).length > 1;
 }
 
 function showToast(msg, type = "success") {
@@ -437,6 +447,7 @@ function createCsCard(p) {
   const showEos    = shouldShowEos(p);
   const visits     = p.visits || [];
   const duplicateBadge = isDuplicateCsHospital(p) ? `<span class="cs-duplicate-badge">重複</span>` : "";
+  const hospitalDisplay = getHospitalDisplayParts(p);
 
   const products = getProductLabels(p);
 
@@ -474,7 +485,7 @@ function createCsCard(p) {
       ${showEos ? `<span class="eos-badge">EOS</span>` : ""}
       <div class="cs-card-head-grid">
         <div class="cs-card-identity">
-          <div class="cs-card-title">${escapeHtml(p.hospitalName)}${duplicateBadge}</div>
+          <div class="cs-card-title">${escapeHtml(hospitalDisplay.hospitalName)}${hospitalDisplay.quickMemo ? `　<span class="cs-card-quick-memo">メモ:${escapeHtml(hospitalDisplay.quickMemo)}</span>` : ""}${duplicateBadge}</div>
           <div class="cs-card-sub">
             ${p.branch ? `<span class="cs-meta-tag cs-meta-branch">${escapeHtml(p.branch)}支店</span>` : ""}
             <span class="cs-meta-tag cs-meta-date">稼働 ${startFmt}</span>
@@ -803,10 +814,12 @@ function openCsAddModal() {
 function openCsEditModal(id) {
   const p = allCsProjects.find(x => x.id === id);
   if (!p) return;
+  const hospitalDisplay = getHospitalDisplayParts(p);
   document.getElementById("csModalTitle").textContent = "CS案件 編集";
   document.getElementById("csEditId").value       = id;
   document.getElementById("csBranch").value       = p.branch || "";
-  document.getElementById("csHospitalName").value = p.hospitalName || "";
+  document.getElementById("csHospitalName").value = hospitalDisplay.hospitalName;
+  document.getElementById("csQuickMemo").value     = hospitalDisplay.quickMemo;
   document.getElementById("csWard").value         = p.ward || "";
   document.getElementById("csStartDate").value    = p.startDate || "";
   document.getElementById("csSupportEndDate").value = p.supportEndDate || "";
@@ -838,10 +851,15 @@ function closeCsModal() {
 async function saveCsProject(e) {
   e.preventDefault();
   const id = document.getElementById("csEditId").value;
+  const hospitalInput = getHospitalDisplayParts({
+    hospitalName: document.getElementById("csHospitalName").value,
+    quickMemo: document.getElementById("csQuickMemo").value,
+  });
   const data = {
     type:          "cs",
     branch:        document.getElementById("csBranch").value,
-    hospitalName:  document.getElementById("csHospitalName").value.trim(),
+    hospitalName:  hospitalInput.hospitalName,
+    quickMemo:     hospitalInput.quickMemo,
     ward:          document.getElementById("csWard").value.trim(),
     startDate:     document.getElementById("csStartDate").value,
     supportEndDate:document.getElementById("csSupportEndDate").value,
