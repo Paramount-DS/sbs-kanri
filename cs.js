@@ -647,7 +647,7 @@ async function exportCsActivitiesXlsx() {
     const visits = p.visits || [];
     const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
     const date = latest.endDate || latest.startDate || "";
-    rows.push([latest.taskItem || "", p.hospitalName || "", date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
+    rows.push([latest.taskItem || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
   });
   const sheet = XLSX.utils.aoa_to_sheet(rows);
   sheet["!cols"] = [{wch:22},{wch:28},{wch:14},{wch:16},{wch:50},{wch:14},{wch:12}];
