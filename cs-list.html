@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-1"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260831-3"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-2"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -31,11 +31,6 @@
 <div class="cs-stats-bar">
   <div class="cs-stats-inner">
     <div class="cs-stat-item cs-total"><span class="cs-stat-num" id="csTotalStat">0</span><span class="cs-stat-label">件（全体）</span></div>
-    <div class="cs-stat-div"></div>
-    <div class="cs-stat-item cs-green"><span class="cs-stat-num" id="csGreenStat">0</span><span class="cs-stat-label">件 良好</span></div>
-    <div class="cs-stat-item cs-yellow"><span class="cs-stat-num" id="csYellowStat">0</span><span class="cs-stat-label">件 注意</span></div>
-    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 リスク</span></div>
-    <div class="cs-stat-item cs-red"><span class="cs-stat-num" id="csRedStat">0</span><span class="cs-stat-label">件 重大リスク</span></div>
   </div>
 </div>
 
@@ -61,13 +56,12 @@
           <th>病院名</th>
           <th>担当</th>
           <th>CSステータス</th>
-          <th>ヘルススコア</th>
           <th>最終対応日</th>
           <th>メモ</th>
         </tr>
       </thead>
       <tbody id="csTableBody">
-        <tr><td colspan="7" class="cs-list-loading">読み込み中...</td></tr>
+        <tr><td colspan="6" class="cs-list-loading">読み込み中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -89,6 +83,6 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
-<script src="cs.js?v=20260831-3"></script>
+<script src="cs.js?v=20260915-2"></script>
 </body>
 </html>

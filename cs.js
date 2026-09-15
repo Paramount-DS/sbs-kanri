@@ -114,6 +114,7 @@ let csFilterPerson = "";
 let csFilterState = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
+const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
 let csFilterBranch = "";
 let pendingCsDeleteId = null;
 
@@ -284,117 +285,11 @@ function getCsState(p) {
   return p.state || p.taskStatus || "正常";
 }
 
-const CS_HEALTH_PHASES = [
-  { key: "操作学習", label: "操作学習", english: "On-boarding", weight: 10 },
-  { key: "支援計画", label: "支援計画", english: "Deployment", weight: 10 },
-  { key: "定着", label: "定着", english: "Adoption", weight: 15 },
-  { key: "活用促進", label: "活用促進", english: "Engagement", weight: 20 },
-  { key: "成果創出", label: "成果創出", english: "Outcome/ROI", weight: 20 },
-  { key: "拡大", label: "拡大", english: "Expansion", weight: 15 },
-  { key: "共創", label: "共創", english: "Advocacy", weight: 10 },
-];
-
-function normalizeHealthPhase(status) {
-  const normalized = normalizeVisitStatus(status);
-  if (normalized === "事例創出") return "共創";
-  if (normalized === "拡大/事例創出") return "拡大";
-  return normalized;
-}
-
-function normalizeHealthModel(value) {
-  if (value === "Lite") return "SBS-Lite";
-  return ["SBS", "SBS-Lite", "Connectハイブリット", "Connectオンプレ"].includes(value) ? value : "SBS";
-}
-
-function getCsHealthValues(p) {
-  const values = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, 0]));
-  const latestScores = Object.fromEntries(CS_HEALTH_PHASES.map(phase => [phase.key, null]));
-  (p.visits || []).forEach((visit,index) => {
-    const key = normalizeHealthPhase(visit.status);
-    if (!(key in values)) return;
-    const score = Number(visit.score);
-    const date = visit.endDate || visit.startDate || "";
-    const current = latestScores[key];
-    if (!current || date > current.date || (date === current.date && index > current.index)) {
-      latestScores[key] = { date, index, score:Number.isFinite(score) ? Math.max(0,Math.min(100,score)) : 0 };
-    }
-  });
-  CS_HEALTH_PHASES.forEach(phase => {
-    values[phase.key] = Math.round(latestScores[phase.key]?.score || 0);
-  });
-  return values;
-}
-
 function getCsStateGroup(p) {
   const state=String(getCsState(p)||"").trim();
   if(state.startsWith("問題あり")) return "problem";
   if(state.startsWith("課題あり")) return "issue";
   return "normal";
-}
-
-function getCsHealth(p) {
-  const values = getCsHealthValues(p);
-  const visits = p.visits || [];
-  let currentIndex = -1;
-  visits.forEach(visit => {
-    const index = CS_HEALTH_PHASES.findIndex(phase => phase.key === normalizeHealthPhase(visit.status));
-    if (index > currentIndex) currentIndex = index;
-  });
-  const activePhases = currentIndex >= 0 ? CS_HEALTH_PHASES.slice(0, currentIndex + 1) : [];
-  const activeWeight = activePhases.reduce((sum, phase) => sum + phase.weight, 0);
-  const weightedScore = activePhases.reduce((sum, phase) => sum + values[phase.key] * phase.weight, 0);
-  const score = activeWeight ? Math.round(weightedScore / activeWeight) : 0;
-  if (score >= 80) return { score, label: "良好", className: "cs-status-green", values, currentIndex };
-  if (score >= 60) return { score, label: "注意", className: "cs-status-yellow", values, currentIndex };
-  return { score, label: "リスク", className: "cs-status-red", values, currentIndex };
-}
-
-function getCsHealthActions(values, currentIndex) {
-  if (currentIndex < 0) return ["次の訪問追加から操作学習の達成度を登録してください。"];
-  const actions = [];
-  if (currentIndex >= 0 && values["操作学習"] < 70) actions.push("On-boarding：勉強会を実施し、基本操作の習得状況を確認する。");
-  if (currentIndex >= 1 && values["支援計画"] < 70) actions.push("Deployment：未導入範囲・未教育者を確認し、初期稼働条件を再整理する。");
-  if (currentIndex >= 2 && values["定着"] < 70) actions.push("Adoption：利用ログを確認し、未活用機能・未利用部署への再教育を実施する。");
-  if (currentIndex >= 3 && values["活用促進"] < 70) actions.push("Engagement：定例会・管理者面談を設定し、現場課題を改善アクションに落とす。");
-  if (currentIndex >= 4 && values["成果創出"] < 70) actions.push("Outcome/ROI：成果指標と費用対効果の根拠を整理する。");
-  if (currentIndex >= 5 && values["拡大"] < 70) actions.push("Expansion：更新・追加導入・他部署展開の提案条件を整理する。");
-  if (currentIndex >= 6 && values["共創"] < 70) actions.push("Advocacy：事例化・紹介・共同プロジェクトの候補を整理する。");
-  if (!actions.length) actions.push("全体状態は良好。更新・追加導入・他部署展開の提案タイミング。");
-  return actions;
-}
-
-function createCsHealthSection(p) {
-  const health = getCsHealth(p);
-  const actions = getCsHealthActions(health.values, health.currentIndex);
-  const healthModel = normalizeHealthModel(p.healthModel || p.systemType1);
-  const currentStatus = getVisitStatusLabel(getLatestVisit(p)?.status);
-  return `
-    <div class="cs-health-section" data-health-id="${p.id}">
-      <div class="cs-health-header">
-        <div class="cs-health-status"><span>ステータス</span><strong>${escapeHtml(currentStatus)}</strong></div>
-        <div class="cs-health-score"><span>ヘルススコア</span><span class="cs-health-result ${health.className}"><strong>${health.score}</strong>${health.label}</span></div>
-      </div>
-      <div class="cs-health-settings">
-        <label>モデル<select data-health-setting="model" onchange="updateCsHealthSettings('${p.id}')">
-          ${["SBS","SBS-Lite","Connectハイブリット","Connectオンプレ"].map(value => `<option value="${value}"${healthModel === value ? " selected" : ""}>${value}</option>`).join("")}
-        </select></label>
-        <label>導入範囲<select data-health-setting="scale" onchange="updateCsHealthSettings('${p.id}')">
-          <option value="all"${(p.healthScale || "all") === "all" ? " selected" : ""}>全床導入</option>
-          <option value="partial"${p.healthScale === "partial" ? " selected" : ""}>部分導入</option>
-        </select></label>
-        <label>Outcome<select data-health-setting="outcomeType" onchange="updateCsHealthSettings('${p.id}')">
-          <option value="labor"${(p.healthOutcomeType || "labor") === "labor" ? " selected" : ""}>労務削減</option>
-          <option value="retention"${p.healthOutcomeType === "retention" ? " selected" : ""}>人材定着</option>
-          <option value="efficiency"${p.healthOutcomeType === "efficiency" ? " selected" : ""}>業務効率</option>
-          <option value="safety"${p.healthOutcomeType === "safety" ? " selected" : ""}>医療安全</option>
-          <option value="quality"${p.healthOutcomeType === "quality" ? " selected" : ""}>質の改善</option>
-        </select></label>
-      </div>
-      <details class="cs-health-actions">
-        <summary>CSアクション</summary>
-        <div>${actions.map(action => `<p>${escapeHtml(action)}</p>`).join("")}</div>
-      </details>
-    </div>`;
 }
 
 function getCsPhase(key) {
@@ -442,7 +337,6 @@ function createCsStateSelect(p) {
 // CSカード生成
 // =============================================
 function createCsCard(p) {
-  const colorClass = getCsHealth(p).className;
   const lastVisit  = getLastVisitInfo(p);
   const showEos    = shouldShowEos(p);
   const visits     = p.visits || [];
@@ -450,6 +344,9 @@ function createCsCard(p) {
   const hospitalDisplay = getHospitalDisplayParts(p);
 
   const products = getProductLabels(p);
+  const productChecks = products.length
+    ? products.map(product => `<span>☑ ${escapeHtml(product)}</span>`).join("")
+    : `<span class="is-empty">未設定</span>`;
 
   // 直近3件の訪問
   const recentVisits = visits.slice(-3);
@@ -481,7 +378,7 @@ function createCsCard(p) {
     : "未設定";
 
   return `
-    <div class="cs-card ${colorClass}" data-id="${p.id}">
+    <div class="cs-card" data-id="${p.id}">
       ${showEos ? `<span class="eos-badge">EOS</span>` : ""}
       <div class="cs-card-head-grid">
         <div class="cs-card-identity">
@@ -492,10 +389,14 @@ function createCsCard(p) {
             ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">担当 ${escapeHtml(p.csPerson)}</span>` : ""}
           </div>
         </div>
-        <label class="cs-card-state-field"><span>状態</span>${createCsStateSelect(p)}</label>
       </div>
       ${products.length ? `<div class="cs-products">${products.map(pr => `<span class="cs-product-badge">${pr}</span>`).join("")}</div>` : ""}
-      ${createCsHealthSection(p)}
+      <div class="cs-install-info">
+        <div><span>導入製品モデル①</span><strong>${escapeHtml(p.systemType1 || "—")}</strong></div>
+        <div><span>導入製品モデル②</span><strong>${escapeHtml(p.systemType2 || "—")}</strong></div>
+        <div class="cs-install-wide"><span>導入範囲</span><strong>${escapeHtml(p.ward || "—")}</strong></div>
+        <div class="cs-install-wide"><span>導入製品</span><div class="cs-install-products">${productChecks}</div></div>
+      </div>
       <div class="${lastVisit.cls} last-visit-indicator">${lastVisit.text}</div>
       ${visits.length
         ? `<details class="cs-visits-section">
@@ -504,7 +405,7 @@ function createCsCard(p) {
            </details>`
         : `<div class="cs-visits-empty">訪問履歴（0件）</div>`}
       <div class="cs-card-actions">
-        <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">次の訪問を追加</button>
+        <button class="btn-cs-next" onclick="openVisitModal('${p.id}')">記録を追加</button>
         <button class="btn-cs-detail" onclick="location.href='cs-dashboard.html?id=${encodeURIComponent(p.id)}'">詳細</button>
         <button class="btn-cs-edit" onclick="openCsEditModal('${p.id}')">編集</button>
         <button class="btn-cs-delete" onclick="openCsDeleteModal('${p.id}')">削除</button>
@@ -530,8 +431,7 @@ function renderCsProjects() {
   });
 
   const statePri={normal:0,problem:1,issue:2};
-  const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
-  filtered.sort((a,b)=>statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)] || (pri[getCsHealth(a).className]??4)-(pri[getCsHealth(b).className]??4));
+  filtered.sort((a,b)=>statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)] || (a.hospitalName||"").localeCompare(b.hospitalName||"","ja"));
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
 
@@ -548,7 +448,6 @@ function renderCsProjects() {
 function createCsListRow(p) {
   const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
-  const health = getCsHealth(p);
   const state = String(getCsState(p) || "").trim() || "正常";
   const alertClass = state !== "正常" ? " cs-list-row-alert" : "";
   return `<tr class="${alertClass.trim()}">
@@ -556,7 +455,6 @@ function createCsListRow(p) {
     <td class="cs-list-hospital"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
-    <td><span class="cs-list-health ${health.className}">${health.score}</span></td>
     <td><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
     <td class="cs-list-memo">${escapeHtml(getLatestVisitMemo(p))}</td>
   </tr>`;
@@ -578,22 +476,18 @@ function renderCsList() {
   });
 
   const statePri={normal:0,problem:1,issue:2};
-  const pri = { "cs-status-red":0, "cs-status-orange":1, "cs-status-yellow":2, "cs-status-green":3 };
   filtered.sort((a, b) => {
     const latestDiff = getLatestVisitDateValue(b) - getLatestVisitDateValue(a);
     if (latestDiff !== 0) return latestDiff;
     const stateDiff=statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)];
     if(stateDiff!==0) return stateDiff;
-    const pa = pri[getCsHealth(a).className] ?? 4;
-    const pb = pri[getCsHealth(b).className] ?? 4;
-    if (pa !== pb) return pa - pb;
     return (a.startDate || "").localeCompare(b.startDate || "");
   });
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
   tbody.innerHTML = filtered.length
     ? filtered.map(createCsListRow).join("")
-    : `<tr><td colspan="7" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+    : `<tr><td colspan="6" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
   updateCsStats();
 }
 
@@ -660,16 +554,8 @@ async function exportCsActivitiesXlsx() {
 
 function updateCsStats() {
   const total = document.getElementById("csTotalStat");
-  const green = document.getElementById("csGreenStat");
-  const yellow = document.getElementById("csYellowStat");
-  const orange = document.getElementById("csOrangeStat");
-  const red = document.getElementById("csRedStat");
   const scoped = csFilterBranch ? allCsProjects.filter(p => p.branch === csFilterBranch) : allCsProjects;
   if (total)  total.textContent  = scoped.length;
-  if (green)  green.textContent  = scoped.filter(p => getCsHealth(p).className === "cs-status-green").length;
-  if (yellow) yellow.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-yellow").length;
-  if (orange) orange.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-orange").length;
-  if (red) red.textContent = scoped.filter(p => getCsHealth(p).className === "cs-status-red").length;
 }
 
 // =============================================
@@ -709,7 +595,7 @@ function initCs() {
 
   const statusSel = document.getElementById("csStatusFilter");
   if (statusSel) {
-    statusSel.innerHTML = `<option value="">全CSステータス</option>` + CS_HEALTH_PHASES.map(phase => `<option value="${escapeHtml(phase.key)}">${escapeHtml(phase.label)} / ${escapeHtml(phase.english)}</option>`).join("");
+    statusSel.innerHTML = `<option value="">全CSステータス</option>` + CS_PHASES.map(phase => `<option value="${escapeHtml(phase.key)}">${escapeHtml(getVisitStatusLabel(phase.key))}</option>`).join("");
     statusSel.addEventListener("change", e => {
       csFilterStatus = e.target.value;
       renderCsView();
@@ -1023,28 +909,6 @@ async function updateCsState(projectId, state) {
   } catch (err) {
     console.error(err);
     showToast("状態の更新に失敗しました", "error");
-  }
-}
-
-async function updateCsHealthSettings(projectId) {
-  const section = document.querySelector(`[data-health-id="${projectId}"]`);
-  if (!section) return;
-  const getSetting = key => section.querySelector(`[data-health-setting="${key}"]`)?.value || "";
-  const data = {
-    healthModel: getSetting("model"),
-    healthScale: getSetting("scale"),
-    healthOutcomeType: getSetting("outcomeType"),
-    healthUpdatedAt: new Date().toISOString(),
-  };
-  const localProject = allCsProjects.find(project => project.id === projectId);
-  if (localProject) Object.assign(localProject, data);
-  renderCsView();
-  try {
-    await db.collection("cs_projects").doc(projectId).update(data);
-    showToast("ヘルススコア設定を更新しました");
-  } catch (err) {
-    console.error(err);
-    showToast("ヘルススコア設定の更新に失敗しました", "error");
   }
 }
 

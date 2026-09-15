@@ -134,8 +134,7 @@ function dashboardCalculations(project) {
   if(kpiRate===null) missing.push("KPI"); else parts.push({score:Math.min(100,kpiRate)*.2,max:20});
   if(unresolved===null) missing.push("未解決課題数"); else parts.push({score:unresolved===0?10:unresolved<=2?5:0,max:10});
   if(renewalDays===null) missing.push("契約更新日"); else parts.push({score:renewalDays>90?10:renewalDays>30?5:0,max:10});
-  const health=getCsHealth(project).score;
-  return {activeRate,featureRate,connectionRate,systemUsage,kpiRate,monthlySaved,annualSaved,roiRate,payback,newestVisit,newestContact,nextContact,visitElapsed,renewalDays,unresolved,health,missing,workReduction,workSummary,effectiveMonthlyHours,monthlyHoursSource:manualMonthlyHours!==null?"手入力":workSummary.hoursPerMonth!==null?"業務削減時間から自動算出":"-"};
+  return {activeRate,featureRate,connectionRate,systemUsage,kpiRate,monthlySaved,annualSaved,roiRate,payback,newestVisit,newestContact,nextContact,visitElapsed,renewalDays,unresolved,missing,workReduction,workSummary,effectiveMonthlyHours,monthlyHoursSource:manualMonthlyHours!==null?"手入力":workSummary.hoursPerMonth!==null?"業務削減時間から自動算出":"-"};
 }
 
 function riskClass(value, caution, risk, reverse=false) {
@@ -187,20 +186,16 @@ function categoryRisk(category,c) {
 }
 
 function renderSummary(p,c) {
-  const healthCls=c.health>=80?"health-good":c.health>=60?"health-caution":"health-critical";
   const data=getDashboardData(p), phase=data.currentPhase;
-  const renewalLabel=c.health>=80?"高":c.health>=60?"中":"低";
-  const dailySaved=c.workSummary.hoursPerDay===null?"-":c.workSummary.hoursPerDay.toFixed(1);
+  const visits=p.visits||[];
+  const visitCount=visits.filter(v=>v.startDate||v.endDate).length;
   const items=[
-    ["ヘルススコア",`${c.health}`,c.health<60?"重大リスク":c.health<80?"要フォロー":"良好",healthCls,"summary-health"],
-    ["現在フェーズ",getVisitStatusLabel(phase),c.missing.length?"入力状況を確認":"進行中","","summary-phase"],
-    ["訪問 / 対応",`${p.visits?.length||0}`,"累計記録数","","summary-visits"],
+    ["現在フェーズ",getVisitStatusLabel(phase),"入力予定を確認","","summary-phase"],
+    ["対応回数",`${visits.length}`,"累計記録数","","summary-response"],
+    ["訪問回数",`${visitCount}`,"累計記録数","","summary-visits"],
     ["稼働期間",shown(daysBetween(p.startDate)),"日","","summary-duration"],
     ["更新まで",shown(c.renewalDays),"日","","summary-renewal"],
-    ["最終訪問から",shown(c.visitElapsed),"日経過","","summary-lastvisit"],
-    ["更新確度",renewalLabel,"","","summary-probability"],
-    ["平均削減時間",dailySaved,"時間 / 日","","summary-saving"],
-    ["総合利用率",c.systemUsage===null?"-":`${Math.round(c.systemUsage)}`,"%","","summary-usage"]
+    ["最終訪問から",shown(c.visitElapsed),"日経過","","summary-lastvisit"]
   ];
   document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>`<div class="dashboard-summary-item ${cls} ${size}"><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`).join("");
 }
@@ -209,24 +204,26 @@ function renderPhasePanel(p) {
 }
 function renderVisitsCard(p) {
   const visits=(p.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
-  return `<div class="dashboard-visit-summary"><strong>${visits.length}</strong><span>累計記録数</span></div>${visits.slice(0,5).map(({visit})=>`<div class="dashboard-visit-row"><time>${escapeHtml(visit.endDate||visit.startDate||"-")}</time><div><strong>${escapeHtml(getVisitStatusLabel(visit.status))}</strong><span>${escapeHtml(visit.taskItem||visit.freeText||"-")}</span></div></div>`).join("")||'<p class="dashboard-empty">訪問記録がありません</p>'}`;
+  return `<div class="dashboard-visit-summary"><strong>${visits.length}</strong><span>累計記録数</span></div>${visits.map(({visit},rowIndex)=>`<div class="dashboard-visit-row"><b>${rowIndex+1}</b><time>${escapeHtml(visit.endDate||visit.startDate||"-")}</time><div><strong>${escapeHtml(getVisitStatusLabel(visit.status))}</strong><span>${escapeHtml(visit.taskItem||visit.freeText||"-")}</span></div></div>`).join("")||'<p class="dashboard-empty">訪問記録がありません</p>'}`;
+}
+
+function renderActivityPanel(p,c,type) {
+  const onboarding=type==="onboarding";
+  const visits=(p.visits||[]).filter(visit=>{
+    const status=normalizeVisitStatus(visit.status);
+    return onboarding ? ["操作学習","支援計画"].includes(status) : !["操作学習","支援計画"].includes(status);
+  }).sort((a,b)=>(b.endDate||b.startDate||"").localeCompare(a.endDate||a.startDate||""));
+  const latest=visits[0];
+  const latestDate=latest?.endDate||latest?.startDate||"";
+  const elapsed=daysBetween(latestDate);
+  const title=onboarding?"オンボーディング活動":"サポート活動";
+  const panel=onboarding?"onboarding":"support";
+  const risk=elapsed===null?badge("未登録","is-empty"):elapsed>=60?badge("未訪問リスク","is-risk"):elapsed>=30?badge("要フォロー","is-caution"):badge("良好","is-good");
+  const rows=[["最終訪問日",shown(latestDate)],["経過日数",shown(elapsed,"日")],["訪問回数",shown(visits.length)],["最終対応日",shown(latestDate)],["次回対応予定日",shown(c.nextContact)]];
+  return `<article class="dashboard-category-card panel-${panel}"><div class="dashboard-card-head"><div><h2>${title}</h2><p>訪問・対応状況</p></div><div>${risk}<button onclick="openDashboardModal('csActivity')">Input</button></div></div>${rowsHtml(rows)}</article>`;
 }
 function dashboardPanel(category,title,subtitle,body,c) {
   return `<article class="dashboard-category-card panel-${category}"><div class="dashboard-card-head"><div><h2>${title}</h2><p>${subtitle}</p></div><div>${categoryRisk(category,c)}<button onclick="openDashboardModal('${category}')">Input</button></div></div>${body}</article>`;
-}
-function renderPhaseScores(p) {
-  const values=getCsHealth(p).values||{};
-  return `<article class="dashboard-category-card panel-phase-score"><div class="dashboard-card-head"><div><h2>フェーズスコア</h2><p>登録タスク達成度の平均</p></div><button onclick="openDashboardModal('phase')">Input</button></div><div class="dashboard-phase-bars">${CS_HEALTH_PHASES.map(phase=>{
-    const score=Math.max(0,Math.min(100,Number(values[phase.key])||0));
-    return `<div class="dashboard-phase-bar"><div><strong>${phase.label}</strong><small>${phase.english}</small></div><span><i style="width:${score}%"></i></span><b>${Math.round(score)}</b></div>`;
-  }).join("")}</div></article>`;
-}
-function renderTrendPanel(p,c) {
-  const visits=[...(p.visits||[])].sort((a,b)=>(a.endDate||a.startDate||"").localeCompare(b.endDate||b.startDate||"")).slice(-10);
-  const points=visits.length?visits.map((visit,index)=>({label:(visit.endDate||visit.startDate||"").slice(5),score:Math.max(0,Math.min(100,Number(visit.score)||0)),health:getCsHealth({...p,csDashboard:null,visits:visits.slice(0,index+1)}).score||0})):[{label:"現在",score:0,health:c.health}];
-  const width=620,height=250,pad=34,step=points.length>1?(width-pad*2)/(points.length-1):0;
-  const coords=key=>points.map((point,index)=>`${pad+index*step},${height-pad-(point[key]/100)*(height-pad*2)}`).join(" ");
-  return `<article class="dashboard-category-card panel-trend"><div class="dashboard-card-head"><div><h2>稼働 / 進捗傾向</h2><p>訪問時スコアとヘルス推移</p></div><div class="dashboard-chart-legend"><span class="is-health">ヘルス</span><span class="is-visit">訪問</span></div></div><svg class="dashboard-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="稼働進捗傾向">${[0,25,50,75,100].map(v=>`<line x1="${pad}" y1="${height-pad-(v/100)*(height-pad*2)}" x2="${width-pad}" y2="${height-pad-(v/100)*(height-pad*2)}" class="trend-grid"/><text x="4" y="${height-pad-(v/100)*(height-pad*2)+4}">${v}</text>`).join("")}<polyline points="${coords("health")}" class="trend-line trend-health"/><polyline points="${coords("score")}" class="trend-line trend-visit"/>${points.map((point,index)=>`<g><circle cx="${pad+index*step}" cy="${height-pad-(point.health/100)*(height-pad*2)}" r="4" class="trend-dot health-dot"/><circle cx="${pad+index*step}" cy="${height-pad-(point.score/100)*(height-pad*2)}" r="4" class="trend-dot visit-dot"/><text x="${pad+index*step}" y="${height-8}" text-anchor="middle">${escapeHtml(point.label||"-")}</text></g>`).join("")}</svg></article>`;
 }
 function workReductionValue(value){return value===null?"未算出":Number(value).toFixed(1);}
 function renderWorkReductionPanel(c){const s=c.workSummary,w=c.workReduction;return `<article class="dashboard-category-card panel-work-reduction"><div class="dashboard-card-head"><div><h2>業務平均削減時間 / 日</h2><p>SBS / Connect 業務削減効果</p></div><button onclick="openDashboardModal('workReduction')">Input</button></div><div class="work-reduction-hero"><span>選択システム</span><strong>${escapeHtml(w.systemType||"未選択")}</strong><b>${s.minutesPerDay===null?"未算出":`${s.minutesPerDay.toFixed(1)} 分`}</b></div><dl class="work-reduction-summary"><div><dt>1日（時間）</dt><dd>${s.hoursPerDay===null?"未算出":`${s.hoursPerDay.toFixed(1)} 時間`}</dd></div><div><dt>月間削減時間</dt><dd>${s.hoursPerMonth===null?"未算出":`${s.hoursPerMonth.toFixed(1)} 時間`}</dd></div><div><dt>年間削減時間</dt><dd>${s.hoursPerYear===null?"未算出":`${s.hoursPerYear.toFixed(1)} 時間`}</dd></div></dl></article>`;}
@@ -248,14 +245,9 @@ function renderUsagePanel(p,c) {
 function renderCategories(p,c) {
   document.getElementById("dashboardCategoryGrid").innerHTML=[
     dashboardPanel("basic","基本情報","既存案件情報",rowsHtml(basicRows(p)),c),
-    dashboardPanel("csActivity","CS活動","訪問・対応状況",rowsHtml(categoryRows("csActivity",p,c)),c),
-    renderPhaseScores(p),
-    renderTrendPanel(p,c),
-    renderWorkReductionPanel(c),
-    `<article class="dashboard-category-card panel-visits"><div class="dashboard-card-head"><div><h2>訪問履歴</h2><p>最新5件を表示</p></div><button onclick="openDashboardModal('visits')">Input</button></div>${renderVisitsCard(p)}</article>`,
-    dashboardPanel("advocacy","共創・事例化","顧客協力・事例化",rowsHtml(categoryRows("advocacy",p,c)),c),
-    renderRolePanel(p,c),
-    renderUsagePanel(p,c)
+    renderActivityPanel(p,c,"onboarding"),
+    renderActivityPanel(p,c,"support"),
+    `<article class="dashboard-category-card panel-visits"><div class="dashboard-card-head"><div><h2>訪問履歴</h2><p>最新情報を表示</p></div><button onclick="openDashboardModal('visits')">Input</button></div>${renderVisitsCard(p)}</article>`
   ].join("");
 }
 function renderDashboard(p) { const c=dashboardCalculations(p); document.getElementById("dashboardHospitalName").textContent=p.hospitalName||"CSダッシュボード"; renderSummary(p,c); renderPhasePanel(p); renderCategories(p,c); }
@@ -291,7 +283,7 @@ function removeDashboardRole(button){const rows=document.querySelectorAll(".dash
 function basicForm(p) {
   const states=[["","-"],["準備中","準備中"],["稼働中","稼働中"],["停止中","停止中"],["解約","解約"],["要注意","要注意"]];
   const fields=[["hospitalName","院名","text"],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
-    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","SOL PM","text"],["systemType1","システム種類","select",[["","-"],["SBS","SBS"],["SBS-Lite","SBS-Lite"],["Connectハイブリット","Connectハイブリット"],["Connectオンプレ","Connectオンプレ"]]],
+    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","SOL PM","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
     ["moveOp","病床移動運用","text"],["bedNumStaff","病床番号変更担当","text"],["bedMoveStaff","床頭台移動担当","text"],["state","状態","select",states]];
   return fields.map(f=>inputHtml(f,p[f[0]])).join("")+`<div class="form-group"><label class="form-label">導入製品</label><div class="dashboard-check-grid">${[["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"]].map(([k,l])=>`<label><input type="checkbox" name="${k}"${p[k]?" checked":""}>${l}</label>`).join("")}</div></div><div class="form-group"><label class="form-label">メモ</label><textarea class="form-textarea" name="memo" rows="4">${escapeHtml(p.memo||"")}</textarea></div>`;
 }
@@ -303,7 +295,7 @@ function visitEditorForm(p) {
   const visit=(p.visits||[])[dashboardVisitEditIndex];
   if(!visit) return '<p class="dashboard-empty">編集する訪問履歴が見つかりません</p>';
   const status=normalizeVisitStatus(visit.status),phase=getCsPhase(status),selectedTask=phase.items.find(item=>item.item===visit.taskItem)||phase.items[0];
-  return `<div class="dashboard-editor-back"><button type="button" onclick="showDashboardVisitList()">← 全履歴へ戻る</button></div><input type="hidden" name="visitIndex" value="${dashboardVisitEditIndex}"><div class="form-group"><label class="form-label">フェーズ / CSステータス</label><select class="form-select" name="visitStatus" onchange="updateDashboardVisitTasks(this.value)">${CS_HEALTH_PHASES.map(row=>`<option value="${row.key}"${row.key===status?" selected":""}>${row.label} / ${row.english}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">項目</label><select class="form-select" id="dashboardVisitTask" name="taskItem" onchange="updateDashboardVisitTaskDetail()">${phase.items.map(item=>`<option value="${escapeHtml(item.item)}"${item.item===selectedTask?.item?" selected":""}>${escapeHtml(item.item)}</option>`).join("")}</select></div><div id="dashboardVisitTaskDetail" class="visit-task-detail"></div><div class="form-group dashboard-score-field"><label class="form-label">達成度 <strong id="dashboardVisitScoreValue">${Number(visit.score)||0}</strong></label><input class="visit-score-range" name="score" type="range" min="0" max="100" value="${Number(visit.score)||0}" oninput="document.getElementById('dashboardVisitScoreValue').textContent=this.value"><div class="visit-score-scale"><span>0</span><span>100</span></div></div>${inputHtml(["startDate","訪問日 / 対応日（開始）","date"],visit.startDate||"")}${inputHtml(["endDate","訪問日 / 対応日（終了）","date"],visit.endDate||visit.startDate||"")}<div class="form-group"><label class="form-label">フリー入力</label><textarea class="form-textarea" name="freeText" rows="4">${escapeHtml(visit.freeText||"")}</textarea></div>`;
+  return `<div class="dashboard-editor-back"><button type="button" onclick="showDashboardVisitList()">← 全履歴へ戻る</button></div><input type="hidden" name="visitIndex" value="${dashboardVisitEditIndex}"><div class="form-group"><label class="form-label">フェーズ / CSステータス</label><select class="form-select" name="visitStatus" onchange="updateDashboardVisitTasks(this.value)">${CS_PHASES.map(row=>`<option value="${row.key}"${row.key===status?" selected":""}>${escapeHtml(getVisitStatusLabel(row.key))}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">項目</label><select class="form-select" id="dashboardVisitTask" name="taskItem" onchange="updateDashboardVisitTaskDetail()">${phase.items.map(item=>`<option value="${escapeHtml(item.item)}"${item.item===selectedTask?.item?" selected":""}>${escapeHtml(item.item)}</option>`).join("")}</select></div><div id="dashboardVisitTaskDetail" class="visit-task-detail"></div><div class="form-group dashboard-score-field"><label class="form-label">達成度 <strong id="dashboardVisitScoreValue">${Number(visit.score)||0}</strong></label><input class="visit-score-range" name="score" type="range" min="0" max="100" value="${Number(visit.score)||0}" oninput="document.getElementById('dashboardVisitScoreValue').textContent=this.value"><div class="visit-score-scale"><span>0</span><span>100</span></div></div>${inputHtml(["startDate","訪問日 / 対応日（開始）","date"],visit.startDate||"")}${inputHtml(["endDate","訪問日 / 対応日（終了）","date"],visit.endDate||visit.startDate||"")}<div class="form-group"><label class="form-label">フリー入力</label><textarea class="form-textarea" name="freeText" rows="4">${escapeHtml(visit.freeText||"")}</textarea></div>`;
 }
 function dashboardSaveButton(){return document.querySelector("#dashboardEditForm .modal-footer .btn-primary");}
 function showDashboardVisitList(){dashboardVisitEditIndex=-1;document.getElementById("dashboardModalTitle").textContent="訪問履歴 Input";document.getElementById("dashboardModalBody").innerHTML=visitsForm(dashboardProject);const button=dashboardSaveButton();if(button)button.style.display="none";}
@@ -317,7 +309,7 @@ function openDashboardModal(category) {
   const data=getDashboardData(dashboardProject);
   let html="";
   if(category==="basic") html=basicForm(dashboardProject);
-  else if(category==="phase") html=inputHtml(["currentPhase","現在フェーズ","select",CS_HEALTH_PHASES.map(p=>[p.key,`${p.label} / ${p.english}`])],data.currentPhase);
+  else if(category==="phase") html=inputHtml(["currentPhase","現在フェーズ","select",CS_PHASES.map(p=>[p.key,getVisitStatusLabel(p.key)])],data.currentPhase);
   else if(category==="visits") html=visitsForm(dashboardProject);
   else if(category==="usage") html=usageForm(data.usage);
   else if(category==="csActivity") html=csActivityForm(data.csActivity);
@@ -398,8 +390,8 @@ async function migrateDashboard(snapshot){
     if(legacyRoles.length) merged.usage.roles=legacyRoles;
   }
   if (!project.csDashboard?.currentPhase && project.visits?.length) {
-    const migratedPhase = normalizeHealthPhase(project.visits.at(-1).status);
-    if (CS_HEALTH_PHASES.some(phase => phase.key === migratedPhase)) merged.currentPhase = migratedPhase;
+    const migratedPhase = normalizeVisitStatus(project.visits.at(-1).status);
+    if (CS_PHASES.some(phase => phase.key === migratedPhase)) merged.currentPhase = migratedPhase;
   }
   const needs=hasMissingDashboardFields(project.csDashboard,DASHBOARD_DEFAULTS)
     || numberValue(project.csDashboard?.usage?.usageDays)!==calculatedUsageDays

@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-2"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260901-1"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-2"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -42,11 +42,6 @@
 <div class="cs-stats-bar">
   <div class="cs-stats-inner">
     <div class="cs-stat-item cs-total"><span class="cs-stat-num" id="csTotalStat">0</span><span class="cs-stat-label">件（全体）</span></div>
-    <div class="cs-stat-div"></div>
-    <div class="cs-stat-item cs-green"><span class="cs-stat-num" id="csGreenStat">0</span><span class="cs-stat-label">件 良好</span></div>
-    <div class="cs-stat-item cs-yellow"><span class="cs-stat-num" id="csYellowStat">0</span><span class="cs-stat-label">件 注意</span></div>
-    <div class="cs-stat-item cs-orange"><span class="cs-stat-num" id="csOrangeStat">0</span><span class="cs-stat-label">件 リスク</span></div>
-    <div class="cs-stat-item cs-red"><span class="cs-stat-num" id="csRedStat">0</span><span class="cs-stat-label">件 重大リスク</span></div>
   </div>
 </div>
 
@@ -128,9 +123,10 @@
           <select id="csSystemType1" class="form-select">
             <option value="">-- 選択 --</option>
             <option value="SBS">SBS</option>
-            <option value="SBS-Lite">SBS-Lite</option>
-            <option value="Connectハイブリット">Connectハイブリット</option>
+            <option value="LiteA">LiteA</option><option value="LiteB">LiteB</option><option value="LiteC">LiteC</option><option value="LiteD">LiteD</option>
+            <option value="Connectハイブリッド">Connectハイブリッド</option>
             <option value="Connectオンプレ">Connectオンプレ</option>
+            <option value="眠りSCAN Viewer">眠りSCAN Viewer</option>
           </select>
         </div>
         <div class="form-group">
@@ -138,9 +134,10 @@
           <select id="csSystemType2" class="form-select">
             <option value="">-- 選択 --</option>
             <option value="SBS">SBS</option>
-            <option value="SBS-Lite">SBS-Lite</option>
-            <option value="Connectハイブリット">Connectハイブリット</option>
+            <option value="LiteA">LiteA</option><option value="LiteB">LiteB</option><option value="LiteC">LiteC</option><option value="LiteD">LiteD</option>
+            <option value="Connectハイブリッド">Connectハイブリッド</option>
             <option value="Connectオンプレ">Connectオンプレ</option>
+            <option value="眠りSCAN Viewer">眠りSCAN Viewer</option>
           </select>
         </div>
 
@@ -342,6 +339,6 @@
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
 <script src="cs-card-data.js"></script>
-<script src="cs.js?v=20260831-5"></script>
+<script src="cs.js?v=20260915-2"></script>
 </body>
 </html>
