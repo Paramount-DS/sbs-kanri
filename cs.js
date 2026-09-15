@@ -39,6 +39,11 @@ let csFilterPerson = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
+const CS_PROJECT_TASKS = {
+  new:["01 商談中","02 概算見積提出","03 導入環境確認","04 仕入れ見積取得","05 最終見積提出","06 CS打合せ","07 受注","08 社内キックオフ","09 システム構築準備","10 稼働","11 稼働後フォロー"],
+  add:["01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー"],
+  vup:["01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー"],
+};
 let csFilterBranch = "";
 let pendingCsDeleteId = null;
 
@@ -588,6 +593,7 @@ function openCsAddModal() {
   document.getElementById("csProjectForm").reset();
   document.getElementById("csEditId").value = "";
   populateCsStaffSelect();
+  updateCsProjectTaskOptions("new");
   document.getElementById("csModal").classList.add("open");
 }
 
@@ -610,6 +616,16 @@ function openCsEditModal(id) {
   document.getElementById("csBedNumStaff").value  = p.bedNumStaff || "";
   document.getElementById("csBedMoveStaff").value = p.bedMoveStaff || "";
   document.getElementById("csMemo").value         = p.memo || "";
+  document.getElementById("csProjectType").value = p.projectType || "new";
+  document.getElementById("csNewOrExisting").value = p.newOrExisting || "";
+  document.getElementById("csSmabe").value = p.smabe || "";
+  document.getElementById("csMainPerson").value = p.mainPerson || "";
+  document.getElementById("csSubPerson").value = p.subPerson || "";
+  updateCsProjectTaskOptions(p.projectType || "new", p.currentTask || "");
+  ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou","ScheduleStatus"].forEach(suffix => {
+    const key = suffix.charAt(0).toLowerCase() + suffix.slice(1);
+    document.getElementById(`cs${suffix}`).value = p[key] || "";
+  });
   document.getElementById("csHasBedside").checked = !!p.hasBedside;
   document.getElementById("csHasBedNavi").checked = !!p.hasBedNavi;
   document.getElementById("csHasNemiri").checked  = !!p.hasNemiri;
@@ -626,6 +642,13 @@ function openCsEditModal(id) {
 
 function closeCsModal() {
   document.getElementById("csModal").classList.remove("open");
+}
+
+function updateCsProjectTaskOptions(type, selected = "") {
+  const select = document.getElementById("csCurrentTask");
+  if (!select) return;
+  const tasks = CS_PROJECT_TASKS[type] || CS_PROJECT_TASKS.new;
+  select.innerHTML = tasks.map(task => `<option value="${escapeHtml(task)}"${task === selected ? " selected" : ""}>${escapeHtml(task)}</option>`).join("");
 }
 
 async function saveCsProject(e) {
@@ -660,6 +683,27 @@ async function saveCsProject(e) {
     hasEhr:        document.getElementById("csHasEhr").checked,
     hasNurse:      document.getElementById("csHasNurse").checked,
     hasNcNotify:   document.getElementById("csHasNcNotify").checked,
+    projectType:   document.getElementById("csProjectType").value,
+    newOrExisting: document.getElementById("csNewOrExisting").value.trim(),
+    smabe:          document.getElementById("csSmabe").value.trim(),
+    mainPerson:     document.getElementById("csMainPerson").value.trim(),
+    subPerson:      document.getElementById("csSubPerson").value.trim(),
+    currentTask:    document.getElementById("csCurrentTask").value,
+    keieiShukai:    document.getElementById("csKeieiShukai").value.trim(),
+    kyokaBedNum:    document.getElementById("csKyokaBedNum").value.trim(),
+    byokoKosei:     document.getElementById("csByokoKosei").value.trim(),
+    donyuBedNum:    document.getElementById("csDonyuBedNum").value.trim(),
+    bedsideTerminal:document.getElementById("csBedsideTerminal").value.trim(),
+    stationTerminal:document.getElementById("csStationTerminal").value.trim(),
+    nemiriScan:     document.getElementById("csNemiriScan").value.trim(),
+    rishoCatch:     document.getElementById("csRishoCatch").value.trim(),
+    wifiNav:        document.getElementById("csWifiNav").value.trim(),
+    tabletPos:      document.getElementById("csTabletPos").value.trim(),
+    electronicKarte:document.getElementById("csElectronicKarte").value.trim(),
+    nurseCall:      document.getElementById("csNurseCall").value.trim(),
+    shuhenRenkei:   document.getElementById("csShuhenRenkei").value.trim(),
+    ankenGaiyou:    document.getElementById("csAnkenGaiyou").value.trim(),
+    scheduleStatus: document.getElementById("csScheduleStatus").value.trim(),
   };
   if (!data.branch) { showToast("支店を選択してください", "error"); return; }
   if (!data.hospitalName) { showToast("病院名を入力してください", "error"); return; }

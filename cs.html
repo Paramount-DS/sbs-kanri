@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-2"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260915-6"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-7"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -140,6 +140,37 @@
             <option value="眠りSCAN Viewer">眠りSCAN Viewer</option>
           </select>
         </div>
+
+        <div class="cs-section-title">案件管理情報</div>
+        <div class="form-group"><label class="form-label">案件タイプ <span class="required">*</span></label><select id="csProjectType" class="form-select" required onchange="updateCsProjectTaskOptions(this.value)"><option value="new">🏥 新規導入</option><option value="add">➕ 病棟追加</option><option value="vup">🔄 バージョンアップ</option></select></div>
+        <div class="form-group"><label class="form-label">新規/既存</label><input id="csNewOrExisting" class="form-input" placeholder="例：新規"/></div>
+        <div class="form-group"><label class="form-label">スマベ</label><input id="csSmabe" class="form-input" placeholder="例：スマベ"/></div>
+        <div class="form-group"><label class="form-label">メイン担当</label><input id="csMainPerson" class="form-input" placeholder="担当者名を入力（候補から選択も可）"/></div>
+        <div class="form-group"><label class="form-label">サブ担当</label><input id="csSubPerson" class="form-input" placeholder="担当者名を入力（候補から選択も可）"/></div>
+        <div class="form-group"><label class="form-label">現在のタスク</label><select id="csCurrentTask" class="form-select"></select></div>
+
+        <div class="cs-section-title">施設情報</div>
+        <div class="form-group"><label class="form-label">経営主体</label><input id="csKeieiShukai" class="form-input" placeholder="例：市立"/></div>
+        <div class="form-group"><label class="form-label">許可病床数</label><input id="csKyokaBedNum" class="form-input" placeholder="例：800床"/></div>
+        <div class="form-group"><label class="form-label">病棟構成</label><input id="csByokoKosei" class="form-input" placeholder="例：急性期主体（ICU20床、HCU20床）"/></div>
+        <div class="form-group"><label class="form-label">導入病床数</label><input id="csDonyuBedNum" class="form-input" placeholder="例：400床"/></div>
+
+        <div class="cs-section-title">機器情報</div>
+        <div class="form-group"><label class="form-label">ベッドサイド端末（既存/新規台数）</label><input id="csBedsideTerminal" class="form-input" placeholder="例：既存0台／新規400台"/></div>
+        <div class="form-group"><label class="form-label">ステーション端末（既存/新規台数）</label><input id="csStationTerminal" class="form-input" placeholder="例：既存0台／新規20台"/></div>
+        <div class="form-group"><label class="form-label">眠りSCAN（既存/新規台数）</label><input id="csNemiriScan" class="form-input" placeholder="例：既存0台／新規400台"/></div>
+        <div class="form-group"><label class="form-label">離床CATCH（既存/新規台数）</label><input id="csRishoCatch" class="form-input" placeholder="例：既存30台／新規50台"/></div>
+        <div class="form-group"><label class="form-label">Wi-Fiベッドナビ（既存/新規台数）</label><input id="csWifiNav" class="form-input" placeholder="例：既存30台／新規50台"/></div>
+        <div class="form-group"><label class="form-label">タブレット設置位置</label><input id="csTabletPos" class="form-input" placeholder="例：床頭台前面"/></div>
+
+        <div class="cs-section-title">システム連携</div>
+        <div class="form-group"><label class="form-label">電子カルテ（ベンダー/機種）</label><input id="csElectronicKarte" class="form-input" placeholder="例：富士通／HOPE LifeMark-HX"/></div>
+        <div class="form-group"><label class="form-label">ナースコール（メーカー/機種）</label><input id="csNurseCall" class="form-input" placeholder="例：ケアコム／PLAIMH-NICCS"/></div>
+        <div class="form-group"><label class="form-label">周辺連携機能</label><input id="csShuhenRenkei" class="form-input" placeholder="例：カメラ機能：あり"/></div>
+
+        <div class="cs-section-title">案件情報</div>
+        <div class="form-group"><label class="form-label">案件概要</label><input id="csAnkenGaiyou" class="form-input" placeholder="例：購入"/></div>
+        <div class="form-group"><label class="form-label">スケジュール状況</label><input id="csScheduleStatus" class="form-input" placeholder="例：電カル更新：2025/7"/></div>
 
         <div class="cs-section-title">導入製品</div>
         <div class="form-group">
@@ -331,6 +362,6 @@
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
 <script src="cs-card-data.js"></script>
-<script src="cs.js?v=20260915-6"></script>
+<script src="cs.js?v=20260915-7"></script>
 </body>
 </html>
