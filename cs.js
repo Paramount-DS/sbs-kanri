@@ -101,13 +101,11 @@ function getVisitColorClass(p) {
 function getLastVisitInfo(p) {
   const freshness = getCardFreshness(p);
   const dateStr = freshness.latest?.endDate || freshness.latest?.startDate;
-  if (!freshness.latest) return { text: "対応記録なし", cls: "last-visit-none" };
-  if (!dateStr) return { text: "日付未設定", cls: "last-visit-none" };
+  if (freshness.status === "none") return { text: "⚠️ 対応記録なし", cls: "last-visit-red" };
   const lastDate = new Date(dateStr);
   const fmt = lastDate.toLocaleDateString("ja-JP", { year:"numeric", month:"2-digit", day:"2-digit" });
-  const warning = freshness.cardClass === "cs-card-warning";
-  const danger = freshness.cardClass === "cs-card-danger";
-  return { text: `最終対応：${fmt}（${freshness.months}か月前）${danger ? " ⚠️" : ""}`, cls: danger ? "last-visit-orange" : warning ? "last-visit-yellow" : "last-visit-green" };
+  const cls = freshness.status === "danger" ? "last-visit-red" : freshness.status === "warning" ? "last-visit-yellow" : "last-visit-green";
+  return { text: `最終対応：${fmt}（${freshness.months}か月前）${freshness.status === "danger" ? " ⚠️" : ""}`, cls };
 }
 
 // =============================================
@@ -176,7 +174,7 @@ function getCardFreshness(p) {
   const phase = getProjectActivityPhase(p);
   const latest = getLatestPhaseVisit(p, phase);
   const dateStr = latest?.endDate || latest?.startDate;
-  if (!dateStr) return { phase, latest, months: 0, cardClass: "" };
+  if (!dateStr) return { phase, latest, months: null, status: "none", cardClass: "cs-card-no-record" };
   const lastDate = new Date(dateStr);
   const today = new Date(); today.setHours(0,0,0,0);
   let months = (today.getFullYear() - lastDate.getFullYear()) * 12 + today.getMonth() - lastDate.getMonth();
@@ -184,7 +182,8 @@ function getCardFreshness(p) {
   months = Math.max(0, months);
   const warningAt = phase === "活用支援/サポート" ? 5 : 2;
   const dangerAt = phase === "活用支援/サポート" ? 10 : 4;
-  return { phase, latest, months, cardClass: months >= dangerAt ? "cs-card-danger" : months >= warningAt ? "cs-card-warning" : "" };
+  const status = months >= dangerAt ? "danger" : months >= warningAt ? "warning" : "normal";
+  return { phase, latest, months, status, cardClass: `cs-card-${status}` };
 }
 
 function getLatestVisitDateText(p) {
@@ -357,7 +356,7 @@ function createCsListRow(p) {
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
     <td><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
-    <td class="cs-list-memo"><div class="cs-list-memo-preview" tabindex="0" data-memo="${escapeHtml(memo)}">${escapeHtml(memo || "—")}</div></td>
+    <td class="cs-list-memo"><div class="cs-list-memo-preview">${escapeHtml(memo || "—")}</div></td>
   </tr>`;
 }
 
@@ -391,33 +390,6 @@ function renderCsList() {
 function renderCsView() {
   if (document.getElementById("csTableBody")) renderCsList();
   else renderCsProjects();
-}
-
-function initMemoPreviewPopup() {
-  if (!document.getElementById("csTableBody") || document.getElementById("csMemoHoverPopup")) return;
-  const popup = document.createElement("div");
-  popup.id = "csMemoHoverPopup";
-  popup.className = "cs-memo-hover-popup";
-  popup.setAttribute("role", "tooltip");
-  document.body.appendChild(popup);
-  const show = target => {
-    const memo = target?.dataset?.memo;
-    if (!memo) return;
-    popup.textContent = memo;
-    popup.classList.add("show");
-    const rect = target.getBoundingClientRect();
-    const width = Math.min(560, window.innerWidth - 24);
-    popup.style.width = `${width}px`;
-    popup.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
-    const below = rect.bottom + 8;
-    popup.style.top = `${below + Math.min(320, popup.offsetHeight) > window.innerHeight ? Math.max(12, rect.top - popup.offsetHeight - 8) : below}px`;
-  };
-  const hide = () => popup.classList.remove("show");
-  document.addEventListener("mouseover", event => { const target=event.target.closest?.(".cs-list-memo-preview"); if(target) show(target); });
-  document.addEventListener("mouseout", event => { if(event.target.closest?.(".cs-list-memo-preview")) hide(); });
-  document.addEventListener("focusin", event => { const target=event.target.closest?.(".cs-list-memo-preview"); if(target) show(target); });
-  document.addEventListener("focusout", event => { if(event.target.closest?.(".cs-list-memo-preview")) hide(); });
-  window.addEventListener("scroll", hide, true);
 }
 
 function renderCsBranchTabs() {
@@ -457,12 +429,19 @@ function loadXlsxLibrary() {
 }
 
 async function exportCsActivitiesXlsx() {
+  const from = document.getElementById("csExportFrom")?.value || "";
+  const to = document.getElementById("csExportTo")?.value || "";
+  if (from && to && from > to) { showToast("出力期間の開始日と終了日を確認してください", "error"); return; }
   try { await loadXlsxLibrary(); }
   catch (error) { showToast(error.message, "error"); return; }
   const projects = allCsProjects.filter(p => !csFilterBranch || p.branch === csFilterBranch);
   const rows = [["項目名","病院名","直近活動日","対応者","直近活動内容","最終活動日","活動総数"]];
   projects.forEach(p => {
-    const visits = p.visits || [];
+    const visits = (p.visits || []).filter(visit => {
+      const date = visit.endDate || visit.startDate || String(visit.createdAt || "").slice(0,10);
+      return date && (!from || date >= from) && (!to || date <= to);
+    });
+    if ((from || to) && !visits.length) return;
     const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
     const date = latest.endDate || latest.startDate || "";
     rows.push([latest.taskItem || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
@@ -472,8 +451,9 @@ async function exportCsActivitiesXlsx() {
   sheet["!autofilter"] = { ref:`A1:G${Math.max(1, rows.length)}` };
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, sheet, "活動内容");
-  XLSX.writeFile(book, `パラサイト_活動内容_${csFilterBranch || "全支店"}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast(`${projects.length}件の活動内容を出力しました`);
+  const period = from || to ? `_${from || "開始以前"}-${to || "終了以降"}` : "_全期間";
+  XLSX.writeFile(book, `パラサイト_活動内容_${csFilterBranch || "全支店"}${period}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${Math.max(0, rows.length - 1)}件の活動内容を出力しました`);
 }
 
 function updateCsStats() {
@@ -516,8 +496,6 @@ function initCs() {
       renderCsView();
     });
   }
-  initMemoPreviewPopup();
-
   // 登録フォームの担当者プルダウン
   if (document.getElementById("csSalesPerson")) populateCsStaffSelect();
 
