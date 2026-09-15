@@ -291,6 +291,9 @@
 .cs-card-head-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 46%); gap: 12px; align-items: end; }
 .cs-card-identity { min-width: 0; }
 .cs-card-title { padding-right: 0; font-size: 17px; }
+.cs-card-current-phase { display:flex; align-items:center; gap:7px; margin-top:5px; font-size:10px; }
+.cs-card-current-phase span { color:#7d6872; font-weight:700; }
+.cs-card-current-phase strong { padding:2px 8px; border:1px solid #efbfd0; border-radius:999px; background:#fff7fa; color:#9d4c6e; font-size:10px; }
 .cs-card-sub { gap: 5px; margin-top: 7px; }
 .cs-meta-tag { padding: 3px 8px; background: rgba(255,255,255,.78); border: 1px solid rgba(239,149,181,.24); font-size: 10px; }
 .cs-meta-date { color: #b25b7d; }

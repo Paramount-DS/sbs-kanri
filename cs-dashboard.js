@@ -154,7 +154,7 @@ function rowsHtml(rows) { return `<dl class="dashboard-data-list">${rows.map(([k
 function basicRows(p) {
   const projectType={new:"新規導入",add:"病棟追加",vup:"バージョンアップ"}[p.projectType]||p.projectType;
   return [["院名",shown(p.hospitalName)],["案件タイプ",shown(projectType)],["導入病棟名",shown(p.ward)],["稼働開始日",shown(p.startDate)],["サポートエンド",shown(p.supportEndDate)],
-    ["担当営業",shown(p.salesPerson)],["担当CS",shown(p.csPerson)],["導入担当者",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
+    ["担当営業",shown(p.salesPerson)],["支援担当",shown(p.csPerson)],["導入担当者",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
     ["導入製品",shown(getProductLabels(p).join(" / "))],["病床移動運用",shown(p.moveOp)],["病床番号変更担当",shown(p.bedNumStaff)],
     ["床頭台移動担当",shown(p.bedMoveStaff)],["新規/既存",shown(p.newOrExisting)],
     ["経営主体",shown(p.keieiShukai)],["許可病床数",shown(p.kyokaBedNum)],["病棟構成",shown(p.byokoKosei)],["導入病床数",shown(p.donyuBedNum)],
@@ -295,7 +295,7 @@ function removeDashboardRole(button){const rows=document.querySelectorAll(".dash
 function basicForm(p) {
   const projectTypes=[["new","🏥 新規導入"],["add","➕ 病棟追加"],["vup","🔄 バージョンアップ"]];
   const fields=[["hospitalName","院名","text"],["projectType","案件タイプ","select",projectTypes],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
-    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","導入担当者","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
+    ["salesPerson","担当営業","text"],["csPerson","支援担当","text"],["solPm","導入担当者","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
     ["moveOp","病床移動運用","text"],["bedNumStaff","病床番号変更担当","text"],["bedMoveStaff","床頭台移動担当","text"],
     ["newOrExisting","新規/既存","text"],
     ["keieiShukai","経営主体","text"],["kyokaBedNum","許可病床数","text"],["byokoKosei","病棟構成","text"],["donyuBedNum","導入病床数","text"],

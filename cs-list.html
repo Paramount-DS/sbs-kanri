@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-1"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260915-8"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-13"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -46,6 +46,7 @@
     </div>
     <select id="csStaffFilter" class="filter-select"><option value="">全員表示</option></select>
     <select id="csStatusFilter" class="filter-select"><option value="">全CSステータス</option></select>
+    <select id="csDateSort" class="filter-select" aria-label="最終対応日の並び順"><option value="desc">日付：新しい順</option><option value="asc">日付：古い順</option></select>
     <span class="count-label"><span id="csProjectCount">0 件</span>表示中</span>
   </div>
 </div>
@@ -56,7 +57,7 @@
       <thead>
         <tr>
           <th>病院名</th>
-          <th>担当</th>
+          <th>支援担当</th>
           <th>CSステータス</th>
           <th>最終対応日</th>
           <th>メモ</th>
@@ -85,6 +86,6 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
-<script src="cs.js?v=20260915-11"></script>
+<script src="cs.js?v=20260915-13"></script>
 </body>
 </html>

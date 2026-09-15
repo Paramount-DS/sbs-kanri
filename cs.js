@@ -40,6 +40,7 @@ let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
 let csFilterBranch = "";
+let csDateSort = "desc";
 let pendingCsDeleteId = null;
 let supportEndMigrationRunning = false;
 
@@ -288,10 +289,11 @@ function createCsCard(p) {
       <div class="cs-card-head-grid">
         <div class="cs-card-identity">
           <div class="cs-card-title">${escapeHtml(hospitalDisplay.hospitalName)}${hospitalDisplay.quickMemo ? `　<span class="cs-card-quick-memo">メモ:${escapeHtml(hospitalDisplay.quickMemo)}</span>` : ""}${duplicateBadge}</div>
+          <div class="cs-card-current-phase"><span>現在フェーズ</span><strong>${escapeHtml(getVisitStatusLabel(getProjectActivityPhase(p)))}</strong></div>
           <div class="cs-card-sub">
             ${p.branch ? `<span class="cs-meta-tag cs-meta-branch">${escapeHtml(p.branch)}支店</span>` : ""}
             <span class="cs-meta-tag cs-meta-date">稼働 ${startFmt}</span>
-            ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">担当 ${escapeHtml(p.csPerson)}</span>` : ""}
+            ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">支援担当 ${escapeHtml(p.csPerson)}</span>` : ""}
           </div>
         </div>
       </div>
@@ -376,7 +378,10 @@ function renderCsList() {
   });
 
   filtered.sort((a, b) => {
-    const latestDiff = getLatestVisitDateValue(b) - getLatestVisitDateValue(a);
+    const aDate=getLatestVisitDateValue(a),bDate=getLatestVisitDateValue(b);
+    if(!aDate&&bDate)return 1;
+    if(aDate&&!bDate)return -1;
+    const latestDiff = csDateSort === "asc" ? aDate - bDate : bDate - aDate;
     if (latestDiff !== 0) return latestDiff;
     return (a.startDate || "").localeCompare(b.startDate || "");
   });
@@ -501,6 +506,11 @@ function initCs() {
       renderCsView();
     });
   }
+  const dateSort = document.getElementById("csDateSort");
+  if (dateSort) dateSort.addEventListener("change", e => {
+    csDateSort = e.target.value;
+    renderCsList();
+  });
   // 登録フォームの担当者プルダウン
   if (document.getElementById("csSalesPerson")) populateCsStaffSelect();
 
@@ -922,7 +932,7 @@ function openCsDetailModal(id) {
         <tr><th>稼働開始日</th><td>${p.startDate||"—"}</td></tr>
         <tr><th>サポートエンド</th><td>${p.supportEndDate||"—"}</td></tr>
         <tr><th>担当営業</th><td>${escapeHtml(p.salesPerson||"")}</td></tr>
-        <tr><th>担当CS</th><td>${escapeHtml(p.csPerson||"")}</td></tr>
+        <tr><th>支援担当</th><td>${escapeHtml(p.csPerson||"")}</td></tr>
         <tr><th>導入担当者</th><td>${escapeHtml(p.solPm||"")}</td></tr>
         <tr><th>システム種類</th><td>${systems.length ? systems.map(escapeHtml).join("、") : "—"}</td></tr>
         <tr><th>導入製品</th><td>${products.length ? products.join("、") : "—"}</td></tr>
@@ -1035,7 +1045,7 @@ function parseCsTableText(text) {
       startDate: getTableValue(row, indexes, ["稼働開始日"]),
       supportEndDate: getTableValue(row, indexes, ["稼働終了日"]),
       salesPerson: getTableValue(row, indexes, ["担当営業"]),
-      csPerson: getTableValue(row, indexes, ["担当CS"]),
+      csPerson: getTableValue(row, indexes, ["支援担当", "担当CS"]),
       solPm: getTableValue(row, indexes, ["SOL PM", "SOLPM"]),
       systemType1: getTableValue(row, indexes, ["システム種類1"]),
       systemType2: getTableValue(row, indexes, ["システム種類2"]),
