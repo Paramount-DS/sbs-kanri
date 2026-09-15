@@ -355,11 +355,11 @@ function createCsListRow(p) {
   const latestDate = getLatestVisitDateText(p);
   const memo = getLatestVisitMemo(p);
   return `<tr>
-    <td class="cs-list-hospital"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
-    <td>${escapeHtml(p.csPerson || "—")}</td>
-    <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
-    <td><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
-    <td class="cs-list-memo"><div class="cs-list-memo-preview">${escapeHtml(memo || "—")}</div></td>
+    <td class="cs-list-hospital" data-label="病院名"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
+    <td data-label="支援担当">${escapeHtml(p.csPerson || "—")}</td>
+    <td data-label="現在フェーズ"><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
+    <td data-label="最終対応日"><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
+    <td class="cs-list-memo" data-label="メモ"><div class="cs-list-memo-preview">${escapeHtml(memo || "—")}</div></td>
   </tr>`;
 }
 

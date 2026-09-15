@@ -272,11 +272,28 @@
 
 /* スマホ */
 @media (max-width: 600px) {
-  .cs-list-page .cs-app-header,
   .cs-list-page .cs-stats-bar,
   .cs-list-page .cs-search-bar { display:none; }
-  .cs-list-page .cs-list-content { padding:10px 0; }
   .cs-card-page .cs-app-header,
+  .cs-list-page .cs-app-header { display:block; position:relative; padding:0 10px; }
+  .cs-card-page .cs-app-header .header-inner,
+  .cs-list-page .cs-app-header .header-inner { display:flex; min-height:0; height:auto; padding:8px 0; gap:7px; flex-wrap:wrap; }
+  .cs-card-page .header-title,
+  .cs-list-page .header-title { flex:1 1 auto; gap:6px; }
+  .cs-card-page .header-logo,
+  .cs-list-page .header-logo { height:22px; }
+  .cs-card-page .cs-branch-tag,
+  .cs-list-page .cs-branch-tag { padding:2px 6px; font-size:10px; }
+  .cs-card-page .cs-header-actions,
+  .cs-list-page .cs-header-actions { gap:5px; }
+  .cs-card-page .cs-header-actions a,
+  .cs-card-page .cs-header-actions button,
+  .cs-list-page .cs-header-actions a { padding:6px 9px; font-size:10px; min-height:30px; }
+  .cs-card-page .header-main-nav,
+  .cs-list-page .header-main-nav { order:3; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; gap:4px; overflow:visible; }
+  .cs-card-page .header-main-nav a,
+  .cs-list-page .header-main-nav a { min-width:0; padding:7px 2px; font-size:10px; text-align:center; }
+  .cs-list-page .cs-list-content { padding:10px; }
   .cs-card-page .cs-stats-bar { display: none; }
   .cs-card-page .cs-branch-bar { position: sticky; top: 0; padding: 7px 10px; }
   .cs-card-page .cs-search-bar { display:block; position:sticky; top:49px; padding:7px 10px; }
@@ -293,6 +310,19 @@
   .cs-card-actions { flex-direction: column; }
   .btn-cs-next { width: 100%; }
   .cs-task-controls { grid-template-columns: 1fr; }
+  .cs-list-page .cs-table-wrap { overflow:visible; background:transparent; box-shadow:none; }
+  .cs-list-page .cs-status-table,
+  .cs-list-page .cs-status-table tbody,
+  .cs-list-page .cs-status-table tr,
+  .cs-list-page .cs-status-table td { display:block; width:100%; min-width:0; }
+  .cs-list-page .cs-status-table { table-layout:auto; }
+  .cs-list-page .cs-status-table thead { display:none; }
+  .cs-list-page .cs-status-table tr { margin-bottom:10px; padding:8px 10px; border:1px solid #efbfd0; border-radius:10px; background:#fff; box-shadow:0 2px 6px rgba(61,72,88,.08); }
+  .cs-list-page .cs-status-table td { display:grid; grid-template-columns:82px minmax(0,1fr); gap:8px; align-items:start; padding:7px 2px; border-bottom:1px solid #f2e4e9; overflow-wrap:anywhere; }
+  .cs-list-page .cs-status-table td:last-child { border-bottom:none; }
+  .cs-list-page .cs-status-table td::before { content:attr(data-label); color:#806777; font-size:10px; font-weight:700; }
+  .cs-list-page .cs-list-hospital { font-size:14px; }
+  .cs-list-page .cs-list-memo-preview { min-height:0; padding:0; border:none; background:transparent; font-size:12px; }
 }
 @media (min-width: 1100px) {
   .cs-grid { grid-template-columns: repeat(3, 1fr); }
