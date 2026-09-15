@@ -272,8 +272,11 @@
 
 /* スマホ */
 @media (max-width: 600px) {
-  .cs-list-page .cs-stats-bar,
-  .cs-list-page .cs-search-bar { display:none; }
+  .cs-list-page .cs-stats-bar { display:none; }
+  .cs-list-page .cs-search-bar { display:block; position:sticky; top:0; padding:7px 10px; }
+  .cs-list-page .cs-search-inner { display:block; }
+  .cs-list-page .cs-search-inner > :not(#csStaffFilter) { display:none; }
+  .cs-list-page #csStaffFilter { display:block; width:100%; min-height:38px; }
   .cs-card-page .cs-app-header,
   .cs-list-page .cs-app-header { display:block; position:relative; padding:0 10px; }
   .cs-card-page .cs-app-header .header-inner,
