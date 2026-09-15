@@ -351,7 +351,7 @@ function renderCsProjects() {
 function createCsListRow(p) {
   const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
-  const memo = getLatestVisitMemo(p) || p.memo || "";
+  const memo = getLatestVisitMemo(p);
   return `<tr>
     <td class="cs-list-hospital"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
@@ -929,7 +929,7 @@ function openCsDetailModal(id) {
         <tr><th>病床移動運用</th><td>${escapeHtml(p.moveOp||"")}</td></tr>
         <tr><th>病床番号変更担当</th><td>${escapeHtml(p.bedNumStaff||"")}</td></tr>
         <tr><th>床頭台移動担当</th><td>${escapeHtml(p.bedMoveStaff||"")}</td></tr>
-        <tr><th>メモ</th><td style="white-space:pre-wrap;">${escapeHtml(p.memo||"")}</td></tr>
+        <tr><th>備考</th><td style="white-space:pre-wrap;">${escapeHtml(p.memo||"")}</td></tr>
         ${visitRows}
       </tbody>
     </table>`;

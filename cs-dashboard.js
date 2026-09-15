@@ -154,7 +154,7 @@ function basicRows(p) {
     ["床頭台移動担当",shown(p.bedMoveStaff)],["新規/既存",shown(p.newOrExisting)],
     ["経営主体",shown(p.keieiShukai)],["許可病床数",shown(p.kyokaBedNum)],["病棟構成",shown(p.byokoKosei)],["導入病床数",shown(p.donyuBedNum)],
     ["ベッドサイド端末",shown(p.bedsideTerminal)],["ステーション端末",shown(p.stationTerminal)],["眠りSCAN",shown(p.nemiriScan)],["離床CATCH",shown(p.rishoCatch)],["Wi-Fiベッドナビ",shown(p.wifiNav)],["タブレット設置位置",shown(p.tabletPos)],
-    ["電子カルテ",shown(p.electronicKarte)],["ナースコール",shown(p.nurseCall)],["周辺連携機能",shown(p.shuhenRenkei)],["案件概要",shown(p.ankenGaiyou)],["メモ",shown(p.memo)]];
+    ["電子カルテ",shown(p.electronicKarte)],["ナースコール",shown(p.nurseCall)],["周辺連携機能",shown(p.shuhenRenkei)],["案件概要",shown(p.ankenGaiyou)],["備考",shown(p.memo)]];
 }
 function categoryRows(category,p,c) {
   const d=getDashboardData(p), x=d[category];
@@ -296,7 +296,7 @@ function basicForm(p) {
     ["keieiShukai","経営主体","text"],["kyokaBedNum","許可病床数","text"],["byokoKosei","病棟構成","text"],["donyuBedNum","導入病床数","text"],
     ["bedsideTerminal","ベッドサイド端末（既存/新規台数）","text"],["stationTerminal","ステーション端末（既存/新規台数）","text"],["nemiriScan","眠りSCAN（既存/新規台数）","text"],["rishoCatch","離床CATCH（既存/新規台数）","text"],["wifiNav","Wi-Fiベッドナビ（既存/新規台数）","text"],["tabletPos","タブレット設置位置","text"],
     ["electronicKarte","電子カルテ（ベンダー/機種）","text"],["nurseCall","ナースコール（メーカー/機種）","text"],["shuhenRenkei","周辺連携機能","text"],["ankenGaiyou","案件概要","text"]];
-  return fields.map(f=>inputHtml(f,p[f[0]])).join("")+`<div class="form-group"><label class="form-label">導入製品</label><div class="dashboard-check-grid">${[["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"]].map(([k,l])=>`<label><input type="checkbox" name="${k}"${p[k]?" checked":""}>${l}</label>`).join("")}</div></div><div class="form-group"><label class="form-label">メモ</label><textarea class="form-textarea" name="memo" rows="4">${escapeHtml(p.memo||"")}</textarea></div>`;
+  return fields.map(f=>inputHtml(f,p[f[0]])).join("")+`<div class="form-group"><label class="form-label">導入製品</label><div class="dashboard-check-grid">${[["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"]].map(([k,l])=>`<label><input type="checkbox" name="${k}"${p[k]?" checked":""}>${l}</label>`).join("")}</div></div><div class="form-group"><label class="form-label">備考</label><textarea class="form-textarea" name="memo" rows="4" placeholder="基本情報に関する備考を入力してください">${escapeHtml(p.memo||"")}</textarea></div>`;
 }
 function visitsForm(p) {
   const visits=(p.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
