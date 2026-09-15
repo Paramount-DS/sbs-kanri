@@ -118,7 +118,7 @@ function isDuplicateHospital(project, projects = allProjects) {
 // カード生成
 // =============================================
 function createCard(project) {
-  const statusClass = project.isLost ? "lost" : checkDelay(project);
+  const statusClass = project.isLost ? "lost" : project.isPostponed ? "postponed" : checkDelay(project);
   const ptypeKey = project.projectType || "new";
   const tasks = getTasksForType(ptypeKey);
   const progress = Math.min(Math.round((project.currentTask/tasks.length)*100),100);
@@ -141,6 +141,7 @@ function createCard(project) {
   else if (statusClass==="warning") statusBadge=`<span class="badge badge-warning">注意</span>`;
   else if (statusClass==="completed") statusBadge=`<span class="badge badge-completed">完了</span>`;
   else if (statusClass==="lost") statusBadge=`<span class="badge badge-lost">失注</span>`;
+  else if (statusClass==="postponed") statusBadge=`<span class="badge badge-postponed">⏸ 延期</span>`;
   const typeBadge = `<span class="badge-type" style="background:${ptype.badgeColor};color:${ptype.badgeText};">${ptype.label}</span>`;
   const duplicateBadge = isDuplicateHospital(project) ? `<span class="duplicate-badge">重複</span>` : "";
   const dots = tasks.map((_,i)=>{
@@ -186,7 +187,7 @@ function createCard(project) {
         ${project.isLost
           ? `<button class="btn btn-lost" disabled>失注済</button>`
           : `<button class="btn btn-lost" onclick="markProjectLost('${project.id}')">失注</button>`}
-        <button class="btn btn-postpone" onclick="postponeProjectTwoYears('${project.id}')">延期</button>
+        <button class="btn btn-postpone" onclick="postponeProjectTwoYears('${project.id}')">⏸ 延期</button>
         <button class="btn btn-delete" onclick="openDeleteModal('${project.id}')">削除</button>
       </div>
     </div>`;
@@ -199,7 +200,7 @@ async function markProjectWon(id) {
   const orderIndex=tasks.findIndex(task=>task.includes("受注"));
   if(orderIndex<0){showToast("受注ステータスが見つかりません","error");return;}
   try {
-    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({currentTask:orderIndex,isLost:false});
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({currentTask:orderIndex,isLost:false,isPostponed:false});
     showToast(`${tasks[orderIndex]}へ更新しました`);
   } catch(error){console.error(error);showToast("受注への更新に失敗しました","error");}
 }
@@ -207,7 +208,7 @@ async function markProjectWon(id) {
 async function markProjectLost(id) {
   if(!window.confirm("この案件を失注にしますか？"))return;
   try {
-    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({isLost:true});
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({isLost:true,isPostponed:false});
     showToast("案件を失注に変更しました");
   } catch(error){console.error(error);showToast("失注への更新に失敗しました","error");}
 }
@@ -226,7 +227,7 @@ async function postponeProjectTwoYears(id) {
   const postponedDate=addYearsToProjectDate(project.goLiveDate,2);
   if(!window.confirm(`稼働予定日を ${postponedDate} へ2年延期しますか？`))return;
   try {
-    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({goLiveDate:postponedDate});
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({goLiveDate:postponedDate,isPostponed:true,isLost:false});
     showToast(`稼働予定日を ${postponedDate} へ延期しました`);
   } catch(error){console.error(error);showToast("延期に失敗しました","error");}
 }
@@ -247,6 +248,8 @@ function renderProjects() {
   });
   const priority = {delay:0,warning:1,"":2,completed:3};
   filtered.sort((a,b)=>{
+    const inactiveA=!!(a.isLost||a.isPostponed),inactiveB=!!(b.isLost||b.isPostponed);
+    if(inactiveA!==inactiveB)return inactiveA?1:-1;
     const pa=priority[checkDelay(a)],pb=priority[checkDelay(b)];
     if (pa!==pb) return pa-pb;
     return new Date(a.goLiveDate)-new Date(b.goLiveDate);
@@ -376,6 +379,7 @@ function openAddModal() {
   document.getElementById("modalTitle").textContent=`新規案件登録（${BRANCHES[currentBranch].label}）`;
   document.getElementById("projectForm").reset();
   document.getElementById("editProjectId").value="";
+  document.getElementById("btnRestoreProject").style.display="none";
   populateStaffInputs("","");
   // 現在のタブのタイプをデフォルトにセット
   document.getElementById("formProjectType").value = currentProjectType;
@@ -387,6 +391,7 @@ function openEditModal(id) {
   const p = allProjects.find(x=>x.id===id); if (!p) return;
   document.getElementById("modalTitle").textContent="案件編集";
   document.getElementById("editProjectId").value=id;
+  document.getElementById("btnRestoreProject").style.display=(p.isLost||p.isPostponed)?"":"none";
   document.getElementById("formHospitalName").value =p.hospitalName||"";
   document.getElementById("formGoLiveDate").value   =p.goLiveDate||"";
   document.getElementById("formProjectType").value  =p.projectType||"new";
@@ -416,6 +421,16 @@ function openEditModal(id) {
 }
 
 function closeModal() { document.getElementById("projectModal").classList.remove("open"); }
+
+async function restoreProjectStatus() {
+  const id=document.getElementById("editProjectId").value;
+  if(!id)return;
+  try {
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({isLost:false,isPostponed:false});
+    showToast("案件を通常ステータスへ復帰しました");
+    closeModal();
+  } catch(error){console.error(error);showToast("復帰に失敗しました","error");}
+}
 
 // 担当者入力欄：テキスト入力（datalistで候補表示）
 function populateStaffInputs(mainVal, subVal) {
