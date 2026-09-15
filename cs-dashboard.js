@@ -86,6 +86,11 @@ function ratio(a, b) { const x=numberValue(a), y=numberValue(b); return x===null
 function calendarDate(value) { if (!value) return null; const d=new Date(value); if(Number.isNaN(d.getTime())) return null; return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
 function daysBetween(from, to = new Date()) { const start=calendarDate(from), end=calendarDate(to); return !start||!end?null:Math.floor((end-start)/86400000); }
 function daysUntil(date) { const end=calendarDate(date), today=calendarDate(new Date()); return !end?null:Math.ceil((end-today)/86400000); }
+function daysToYearsMonths(days) {
+  if (days === null || days === undefined || days === "") return "";
+  const total = Math.max(0, Number(days) || 0), years = Math.floor(total / 365), months = Math.floor((total % 365) / 30);
+  return years ? `${years}年${months}か月` : `${months}か月`;
+}
 function operatingDays(date){const days=daysBetween(date);return days===null?null:Math.max(0,days);}
 function previousDate(date){const d=calendarDate(date);if(!d)return "";d.setDate(d.getDate()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 function mergedDashboard(raw = {}) {
@@ -198,8 +203,8 @@ function renderSummary(p,c) {
     ["現在フェーズ",getVisitStatusLabel(phase),"入力予定を確認","","summary-phase"],
     ["対応回数",`${visits.length}`,"累計記録数","","summary-response"],
     ["訪問回数",`${visitCount}`,"累計記録数","","summary-visits"],
-    ["稼働期間",shown(daysBetween(p.startDate)),"日","","summary-duration"],
-    ["更新まで",shown(c.renewalDays),"日","","summary-renewal"],
+    ["稼働期間",daysBetween(p.startDate)===null?"-":`${daysBetween(p.startDate)}日`,daysBetween(p.startDate)===null?"":`（${daysToYearsMonths(daysBetween(p.startDate))}）`,"","summary-duration"],
+    ["更新まで",c.renewalDays===null?"-":`${c.renewalDays}日`,c.renewalDays===null?"":`（${daysToYearsMonths(c.renewalDays)}）`,"","summary-renewal"],
     ["最終対応から",shown(daysBetween(currentLatestDate)),"日経過","","summary-lastvisit"]
   ];
   document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>`<div class="dashboard-summary-item ${cls} ${size}"><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`).join("");
