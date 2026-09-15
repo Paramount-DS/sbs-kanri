@@ -149,12 +149,12 @@ function rowsHtml(rows) { return `<dl class="dashboard-data-list">${rows.map(([k
 function basicRows(p) {
   const projectType={new:"新規導入",add:"病棟追加",vup:"バージョンアップ"}[p.projectType]||p.projectType;
   return [["院名",shown(p.hospitalName)],["案件タイプ",shown(projectType)],["導入病棟名",shown(p.ward)],["稼働開始日",shown(p.startDate)],["サポートエンド",shown(p.supportEndDate)],
-    ["担当営業",shown(p.salesPerson)],["担当CS",shown(p.csPerson)],["SOL PM",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
+    ["担当営業",shown(p.salesPerson)],["担当CS",shown(p.csPerson)],["導入担当者",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
     ["導入製品",shown(getProductLabels(p).join(" / "))],["病床移動運用",shown(p.moveOp)],["病床番号変更担当",shown(p.bedNumStaff)],
-    ["床頭台移動担当",shown(p.bedMoveStaff)],["新規/既存",shown(p.newOrExisting)],["スマベ",shown(p.smabe)],["メイン担当",shown(p.mainPerson)],["サブ担当",shown(p.subPerson)],["現在のタスク",shown(p.currentTask)],
+    ["床頭台移動担当",shown(p.bedMoveStaff)],["新規/既存",shown(p.newOrExisting)],
     ["経営主体",shown(p.keieiShukai)],["許可病床数",shown(p.kyokaBedNum)],["病棟構成",shown(p.byokoKosei)],["導入病床数",shown(p.donyuBedNum)],
     ["ベッドサイド端末",shown(p.bedsideTerminal)],["ステーション端末",shown(p.stationTerminal)],["眠りSCAN",shown(p.nemiriScan)],["離床CATCH",shown(p.rishoCatch)],["Wi-Fiベッドナビ",shown(p.wifiNav)],["タブレット設置位置",shown(p.tabletPos)],
-    ["電子カルテ",shown(p.electronicKarte)],["ナースコール",shown(p.nurseCall)],["周辺連携機能",shown(p.shuhenRenkei)],["案件概要",shown(p.ankenGaiyou)],["スケジュール状況",shown(p.scheduleStatus)],["メモ",shown(p.memo)]];
+    ["電子カルテ",shown(p.electronicKarte)],["ナースコール",shown(p.nurseCall)],["周辺連携機能",shown(p.shuhenRenkei)],["案件概要",shown(p.ankenGaiyou)],["メモ",shown(p.memo)]];
 }
 function categoryRows(category,p,c) {
   const d=getDashboardData(p), x=d[category];
@@ -289,14 +289,13 @@ function addDashboardRole(){document.getElementById("dashboardRoleRows")?.insert
 function removeDashboardRole(button){const rows=document.querySelectorAll(".dashboard-role-input-row");if(rows.length>1)button.closest(".dashboard-role-input-row")?.remove();else{const row=button.closest(".dashboard-role-input-row");row.querySelector('[name="roleName"]').value="";row.querySelector('[name="roleCount"]').value="";}}
 function basicForm(p) {
   const projectTypes=[["new","🏥 新規導入"],["add","➕ 病棟追加"],["vup","🔄 バージョンアップ"]];
-  const taskOptions=(CS_PROJECT_TASKS[p.projectType||"new"]||CS_PROJECT_TASKS.new).map(value=>[value,value]);
   const fields=[["hospitalName","院名","text"],["projectType","案件タイプ","select",projectTypes],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
-    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","SOL PM","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
+    ["salesPerson","担当営業","text"],["csPerson","担当CS","text"],["solPm","導入担当者","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
     ["moveOp","病床移動運用","text"],["bedNumStaff","病床番号変更担当","text"],["bedMoveStaff","床頭台移動担当","text"],
-    ["newOrExisting","新規/既存","text"],["smabe","スマベ","text"],["mainPerson","メイン担当","text"],["subPerson","サブ担当","text"],["currentTask","現在のタスク","select",taskOptions],
+    ["newOrExisting","新規/既存","text"],
     ["keieiShukai","経営主体","text"],["kyokaBedNum","許可病床数","text"],["byokoKosei","病棟構成","text"],["donyuBedNum","導入病床数","text"],
     ["bedsideTerminal","ベッドサイド端末（既存/新規台数）","text"],["stationTerminal","ステーション端末（既存/新規台数）","text"],["nemiriScan","眠りSCAN（既存/新規台数）","text"],["rishoCatch","離床CATCH（既存/新規台数）","text"],["wifiNav","Wi-Fiベッドナビ（既存/新規台数）","text"],["tabletPos","タブレット設置位置","text"],
-    ["electronicKarte","電子カルテ（ベンダー/機種）","text"],["nurseCall","ナースコール（メーカー/機種）","text"],["shuhenRenkei","周辺連携機能","text"],["ankenGaiyou","案件概要","text"],["scheduleStatus","スケジュール状況","text"]];
+    ["electronicKarte","電子カルテ（ベンダー/機種）","text"],["nurseCall","ナースコール（メーカー/機種）","text"],["shuhenRenkei","周辺連携機能","text"],["ankenGaiyou","案件概要","text"]];
   return fields.map(f=>inputHtml(f,p[f[0]])).join("")+`<div class="form-group"><label class="form-label">導入製品</label><div class="dashboard-check-grid">${[["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"]].map(([k,l])=>`<label><input type="checkbox" name="${k}"${p[k]?" checked":""}>${l}</label>`).join("")}</div></div><div class="form-group"><label class="form-label">メモ</label><textarea class="form-textarea" name="memo" rows="4">${escapeHtml(p.memo||"")}</textarea></div>`;
 }
 function visitsForm(p) {
@@ -328,6 +327,10 @@ function openDashboardModal(category) {
   else if(category==="workReduction") html=workReductionForm(dashboardProject.workReduction||{});
   else html=DASHBOARD_FIELDS[category].map(f=>inputHtml(f,data[category][f[0]])).join("");
   document.getElementById("dashboardModalBody").innerHTML=html;
+  if(category==="basic") {
+    const start=document.querySelector('#dashboardEditForm [name="startDate"]'),end=document.querySelector('#dashboardEditForm [name="supportEndDate"]');
+    if(start&&end) start.addEventListener("change",()=>{end.value=supportEndSevenYearsAfter(start.value);});
+  }
   document.getElementById("dashboardEditModal").classList.add("open");
   const saveButton=dashboardSaveButton();
   if(saveButton)saveButton.style.display=category==="visits"?"none":"";
@@ -340,6 +343,7 @@ async function saveDashboardForm(event) {
     if(category==="basic") {
       ["hasBedside","hasBedNavi","hasNemiri","hasRisha","hasVital","hasEhr","hasNurse","hasNcNotify"].forEach(k=>values[k]=form.elements[k]?.checked||false);
       if(!values.hospitalName.trim()) throw new Error("院名は必須です");
+      if(!values.supportEndDate&&values.startDate) values.supportEndDate=supportEndSevenYearsAfter(values.startDate);
       await dashboardDocRef.set(values,{merge:true});
     } else if(category==="phase") await dashboardDocRef.set({csDashboard:{...getDashboardData(dashboardProject),currentPhase:values.currentPhase}},{merge:true});
     else if(category==="visits") await saveDashboardVisit(values);

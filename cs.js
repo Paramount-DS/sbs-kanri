@@ -39,11 +39,6 @@ let csFilterPerson = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
-const CS_PROJECT_TASKS = {
-  new:["01 商談中","02 概算見積提出","03 導入環境確認","04 仕入れ見積取得","05 最終見積提出","06 CS打合せ","07 受注","08 社内キックオフ","09 システム構築準備","10 稼働","11 稼働後フォロー"],
-  add:["01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー"],
-  vup:["01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー"],
-};
 let csFilterBranch = "";
 let pendingCsDeleteId = null;
 
@@ -474,6 +469,10 @@ function initCs() {
   renderCsBranchTabs();
   const branchSelect = document.getElementById("csBranch");
   if (branchSelect) branchSelect.innerHTML = `<option value="">-- 選択 --</option>` + CS_BRANCHES.map(branch => `<option value="${branch}">${branch}</option>`).join("");
+  const startDateInput = document.getElementById("csStartDate");
+  if (startDateInput) startDateInput.addEventListener("change", () => {
+    document.getElementById("csSupportEndDate").value = supportEndSevenYearsAfter(startDateInput.value);
+  });
   // 検索
   const searchInput = document.getElementById("csSearchInput");
   if (searchInput) {
@@ -593,7 +592,6 @@ function openCsAddModal() {
   document.getElementById("csProjectForm").reset();
   document.getElementById("csEditId").value = "";
   populateCsStaffSelect();
-  updateCsProjectTaskOptions("new");
   document.getElementById("csModal").classList.add("open");
 }
 
@@ -618,10 +616,6 @@ function openCsEditModal(id) {
   document.getElementById("csMemo").value         = p.memo || "";
   document.getElementById("csProjectType").value = p.projectType || "new";
   document.getElementById("csNewOrExisting").value = p.newOrExisting || "";
-  document.getElementById("csSmabe").value = p.smabe || "";
-  document.getElementById("csMainPerson").value = p.mainPerson || "";
-  document.getElementById("csSubPerson").value = p.subPerson || "";
-  updateCsProjectTaskOptions(p.projectType || "new", p.currentTask || "");
   ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou","ScheduleStatus"].forEach(suffix => {
     const key = suffix.charAt(0).toLowerCase() + suffix.slice(1);
     document.getElementById(`cs${suffix}`).value = p[key] || "";
@@ -644,11 +638,12 @@ function closeCsModal() {
   document.getElementById("csModal").classList.remove("open");
 }
 
-function updateCsProjectTaskOptions(type, selected = "") {
-  const select = document.getElementById("csCurrentTask");
-  if (!select) return;
-  const tasks = CS_PROJECT_TASKS[type] || CS_PROJECT_TASKS.new;
-  select.innerHTML = tasks.map(task => `<option value="${escapeHtml(task)}"${task === selected ? " selected" : ""}>${escapeHtml(task)}</option>`).join("");
+function supportEndSevenYearsAfter(startDate) {
+  const match = String(startDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  const year = Number(match[1]) + 7, month = Number(match[2]), day = Number(match[3]);
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${String(month).padStart(2,"0")}-${String(Math.min(day,lastDay)).padStart(2,"0")}`;
 }
 
 async function saveCsProject(e) {
@@ -665,7 +660,7 @@ async function saveCsProject(e) {
     quickMemo:     hospitalInput.quickMemo,
     ward:          document.getElementById("csWard").value.trim(),
     startDate:     document.getElementById("csStartDate").value,
-    supportEndDate:document.getElementById("csSupportEndDate").value,
+    supportEndDate:document.getElementById("csSupportEndDate").value || supportEndSevenYearsAfter(document.getElementById("csStartDate").value),
     salesPerson:   document.getElementById("csSalesPerson").value.trim(),
     csPerson:      document.getElementById("csPerson").value.trim(),
     solPm:         document.getElementById("csSolPm").value.trim(),
@@ -685,10 +680,6 @@ async function saveCsProject(e) {
     hasNcNotify:   document.getElementById("csHasNcNotify").checked,
     projectType:   document.getElementById("csProjectType").value,
     newOrExisting: document.getElementById("csNewOrExisting").value.trim(),
-    smabe:          document.getElementById("csSmabe").value.trim(),
-    mainPerson:     document.getElementById("csMainPerson").value.trim(),
-    subPerson:      document.getElementById("csSubPerson").value.trim(),
-    currentTask:    document.getElementById("csCurrentTask").value,
     keieiShukai:    document.getElementById("csKeieiShukai").value.trim(),
     kyokaBedNum:    document.getElementById("csKyokaBedNum").value.trim(),
     byokoKosei:     document.getElementById("csByokoKosei").value.trim(),
@@ -703,7 +694,6 @@ async function saveCsProject(e) {
     nurseCall:      document.getElementById("csNurseCall").value.trim(),
     shuhenRenkei:   document.getElementById("csShuhenRenkei").value.trim(),
     ankenGaiyou:    document.getElementById("csAnkenGaiyou").value.trim(),
-    scheduleStatus: document.getElementById("csScheduleStatus").value.trim(),
   };
   if (!data.branch) { showToast("支店を選択してください", "error"); return; }
   if (!data.hospitalName) { showToast("病院名を入力してください", "error"); return; }
@@ -902,7 +892,7 @@ function openCsDetailModal(id) {
         <tr><th>サポートエンド</th><td>${p.supportEndDate||"—"}</td></tr>
         <tr><th>担当営業</th><td>${escapeHtml(p.salesPerson||"")}</td></tr>
         <tr><th>担当CS</th><td>${escapeHtml(p.csPerson||"")}</td></tr>
-        <tr><th>SOL PM</th><td>${escapeHtml(p.solPm||"")}</td></tr>
+        <tr><th>導入担当者</th><td>${escapeHtml(p.solPm||"")}</td></tr>
         <tr><th>システム種類</th><td>${systems.length ? systems.map(escapeHtml).join("、") : "—"}</td></tr>
         <tr><th>導入製品</th><td>${products.length ? products.join("、") : "—"}</td></tr>
         <tr><th>病床移動運用</th><td>${escapeHtml(p.moveOp||"")}</td></tr>
