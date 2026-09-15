@@ -186,6 +186,7 @@ function createCard(project) {
         ${project.isLost
           ? `<button class="btn btn-lost" disabled>失注済</button>`
           : `<button class="btn btn-lost" onclick="markProjectLost('${project.id}')">失注</button>`}
+        <button class="btn btn-postpone" onclick="postponeProjectTwoYears('${project.id}')">延期</button>
         <button class="btn btn-delete" onclick="openDeleteModal('${project.id}')">削除</button>
       </div>
     </div>`;
@@ -209,6 +210,25 @@ async function markProjectLost(id) {
     await db.collection(BRANCHES[currentBranch].collection).doc(id).update({isLost:true});
     showToast("案件を失注に変更しました");
   } catch(error){console.error(error);showToast("失注への更新に失敗しました","error");}
+}
+
+function addYearsToProjectDate(dateValue, years) {
+  const match=String(dateValue||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!match)return "";
+  const year=Number(match[1])+years,month=Number(match[2]),day=Number(match[3]);
+  const lastDay=new Date(Date.UTC(year,month,0)).getUTCDate();
+  return `${year}-${String(month).padStart(2,"0")}-${String(Math.min(day,lastDay)).padStart(2,"0")}`;
+}
+
+async function postponeProjectTwoYears(id) {
+  const project=allProjects.find(item=>item.id===id);
+  if(!project?.goLiveDate){showToast("稼働予定日が設定されていません","error");return;}
+  const postponedDate=addYearsToProjectDate(project.goLiveDate,2);
+  if(!window.confirm(`稼働予定日を ${postponedDate} へ2年延期しますか？`))return;
+  try {
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({goLiveDate:postponedDate});
+    showToast(`稼働予定日を ${postponedDate} へ延期しました`);
+  } catch(error){console.error(error);showToast("延期に失敗しました","error");}
 }
 
 // =============================================

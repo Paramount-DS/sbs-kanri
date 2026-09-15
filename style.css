@@ -826,6 +826,8 @@ body {
 .btn-order:hover { background:#cfebd8; }
 .btn-lost { background:#eceef1; color:#59616c; border:1px solid #c4c9d0; }
 .btn-lost:hover { background:#dfe2e6; }
+.btn-postpone { background:#fff4d8; color:#8a5b00; border:1px solid #e5c36d; }
+.btn-postpone:hover { background:#f9e8ba; }
 .badge-lost { background:#6f7680; color:#fff; }
 
 .btn-delete {
