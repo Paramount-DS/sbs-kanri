@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-1"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260915-3"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-4"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -18,16 +18,20 @@
   <div class="header-inner">
     <div class="header-title">
       <img src="logo2.png" alt="Parasight" class="header-logo"/>
-      <span class="cs-branch-tag">導入支援一覧</span>
+      <span class="cs-branch-tag">導入支援</span>
     </div>
+    <nav class="header-main-nav" aria-label="メイン機能">
+      <a href="index.html">案件管理</a>
+      <a href="cs.html" class="active">導入支援</a>
+      <a href="schedule.html#calendar">カレンダー</a>
+      <a href="schedule.html#timeline">工程表</a>
+    </nav>
     <div class="cs-header-actions">
       <a href="cs.html" class="btn-cs-list">カード</a>
-      <a href="index.html" class="btn-cs-top">案件管理</a>
+      <a href="cs.html" class="btn-add-cs">＋ 新規案件登録</a>
     </div>
   </div>
 </header>
-<nav class="app-section-nav" aria-label="メイン機能"><a href="index.html">案件管理</a><a href="cs.html" class="active">導入支援</a><a href="schedule.html#calendar">カレンダー</a><a href="schedule.html#timeline">工程表</a></nav>
-
 <div class="cs-stats-bar">
   <div class="cs-stats-inner">
     <div class="cs-stat-item cs-total"><span class="cs-stat-num" id="csTotalStat">0</span><span class="cs-stat-label">件（全体）</span></div>
@@ -41,7 +45,6 @@
       <input type="text" id="csSearchInput" class="search-input" placeholder="病院名で検索..."/>
     </div>
     <select id="csStaffFilter" class="filter-select"><option value="">全員表示</option></select>
-    <select id="csStateFilter" class="filter-select"><option value="">全状態</option></select>
     <select id="csStatusFilter" class="filter-select"><option value="">全CSステータス</option></select>
     <span class="count-label"><span id="csProjectCount">0 件</span>表示中</span>
   </div>
@@ -52,7 +55,6 @@
     <table class="cs-status-table">
       <thead>
         <tr>
-          <th>状態</th>
           <th>病院名</th>
           <th>担当</th>
           <th>CSステータス</th>
@@ -61,7 +63,7 @@
         </tr>
       </thead>
       <tbody id="csTableBody">
-        <tr><td colspan="6" class="cs-list-loading">読み込み中...</td></tr>
+        <tr><td colspan="5" class="cs-list-loading">読み込み中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -83,6 +85,6 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
-<script src="cs.js?v=20260915-3"></script>
+<script src="cs.js?v=20260915-4"></script>
 </body>
 </html>

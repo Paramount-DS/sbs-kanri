@@ -6,16 +6,6 @@
 const CIRCLE_NUMS = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩",
                      "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"];
 
-const CS_STATE_OPTIONS = [
-  "正常",
-  "問題あり(システム)",
-  "問題あり(運用)",
-  "問題あり(システム/運用)",
-  "課題あり(システム)",
-  "課題あり(運用)",
-  "課題あり(システム/運用)",
-];
-
 const CS_PHASES = [
   {
     key: "活用支援/オンボーディング",
@@ -46,7 +36,6 @@ const CS_PHASES = [
 let allCsProjects = [];
 let csSearchQuery = "";
 let csFilterPerson = "";
-let csFilterState = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
@@ -216,17 +205,6 @@ function getLatestVisitMemo(p) {
   return latest?.freeText || "";
 }
 
-function getCsState(p) {
-  return p.state || p.taskStatus || "正常";
-}
-
-function getCsStateGroup(p) {
-  const state=String(getCsState(p)||"").trim();
-  if(state.startsWith("問題あり")) return "problem";
-  if(state.startsWith("課題あり")) return "issue";
-  return "normal";
-}
-
 function getCsPhase(key) {
   return CS_PHASES.find(phase => phase.key === key) || CS_PHASES[0];
 }
@@ -258,13 +236,6 @@ function createCsTaskSection(p) {
         <div><span>効果</span>${escapeHtml(selectedItem.effect)}</div>
       </div>
     </div>`;
-}
-
-function createCsStateSelect(p) {
-  const current = getCsState(p);
-  return `<select class="cs-card-state-select" onchange="updateCsState('${p.id}', this.value)">
-    ${CS_STATE_OPTIONS.map(s => `<option value="${escapeHtml(s)}"${s === current ? " selected" : ""}>${escapeHtml(s)}</option>`).join("")}
-  </select>`;
 }
 
 // =============================================
@@ -358,14 +329,12 @@ function renderCsProjects() {
   let filtered = allCsProjects.filter(p => {
     const matchName   = (p.hospitalName || "").toLowerCase().includes(csSearchQuery.toLowerCase());
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchState = !csFilterState || getCsStateGroup(p) === csFilterState;
     const matchStatus = !csFilterStatus || normalizeVisitStatus(getLatestVisit(p)?.status) === csFilterStatus;
     const matchBranch = !csFilterBranch || p.branch === csFilterBranch;
-    return matchName && matchPerson && matchState && matchStatus && matchBranch;
+    return matchName && matchPerson && matchStatus && matchBranch;
   });
 
-  const statePri={normal:0,problem:1,issue:2};
-  filtered.sort((a,b)=>statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)] || (a.hospitalName||"").localeCompare(b.hospitalName||"","ja"));
+  filtered.sort((a,b)=>(a.hospitalName||"").localeCompare(b.hospitalName||"","ja"));
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
 
@@ -382,15 +351,13 @@ function renderCsProjects() {
 function createCsListRow(p) {
   const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
-  const state = String(getCsState(p) || "").trim() || "正常";
-  const alertClass = state !== "正常" ? " cs-list-row-alert" : "";
-  return `<tr class="${alertClass.trim()}">
-    <td><span class="cs-list-state">${escapeHtml(state)}</span></td>
+  const memo = getLatestVisitMemo(p) || p.memo || "";
+  return `<tr>
     <td class="cs-list-hospital"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
     <td>${escapeHtml(p.csPerson || "—")}</td>
     <td><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
     <td><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
-    <td class="cs-list-memo">${escapeHtml(getLatestVisitMemo(p))}</td>
+    <td class="cs-list-memo"><div class="cs-list-memo-preview" tabindex="0" data-memo="${escapeHtml(memo)}">${escapeHtml(memo || "—")}</div></td>
   </tr>`;
 }
 
@@ -403,31 +370,54 @@ function renderCsList() {
     const name = (p.hospitalName || "").toLowerCase();
     const matchName = name.includes(q);
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchState = !csFilterState || getCsStateGroup(p) === csFilterState;
     const latestStatus = normalizeVisitStatus(getLatestVisit(p)?.status);
     const matchStatus = !csFilterStatus || latestStatus === csFilterStatus;
-    return matchName && matchPerson && matchState && matchStatus;
+    return matchName && matchPerson && matchStatus;
   });
 
-  const statePri={normal:0,problem:1,issue:2};
   filtered.sort((a, b) => {
     const latestDiff = getLatestVisitDateValue(b) - getLatestVisitDateValue(a);
     if (latestDiff !== 0) return latestDiff;
-    const stateDiff=statePri[getCsStateGroup(a)]-statePri[getCsStateGroup(b)];
-    if(stateDiff!==0) return stateDiff;
     return (a.startDate || "").localeCompare(b.startDate || "");
   });
 
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
   tbody.innerHTML = filtered.length
     ? filtered.map(createCsListRow).join("")
-    : `<tr><td colspan="6" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+    : `<tr><td colspan="5" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
   updateCsStats();
 }
 
 function renderCsView() {
   if (document.getElementById("csTableBody")) renderCsList();
   else renderCsProjects();
+}
+
+function initMemoPreviewPopup() {
+  if (!document.getElementById("csTableBody") || document.getElementById("csMemoHoverPopup")) return;
+  const popup = document.createElement("div");
+  popup.id = "csMemoHoverPopup";
+  popup.className = "cs-memo-hover-popup";
+  popup.setAttribute("role", "tooltip");
+  document.body.appendChild(popup);
+  const show = target => {
+    const memo = target?.dataset?.memo;
+    if (!memo) return;
+    popup.textContent = memo;
+    popup.classList.add("show");
+    const rect = target.getBoundingClientRect();
+    const width = Math.min(560, window.innerWidth - 24);
+    popup.style.width = `${width}px`;
+    popup.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
+    const below = rect.bottom + 8;
+    popup.style.top = `${below + Math.min(320, popup.offsetHeight) > window.innerHeight ? Math.max(12, rect.top - popup.offsetHeight - 8) : below}px`;
+  };
+  const hide = () => popup.classList.remove("show");
+  document.addEventListener("mouseover", event => { const target=event.target.closest?.(".cs-list-memo-preview"); if(target) show(target); });
+  document.addEventListener("mouseout", event => { if(event.target.closest?.(".cs-list-memo-preview")) hide(); });
+  document.addEventListener("focusin", event => { const target=event.target.closest?.(".cs-list-memo-preview"); if(target) show(target); });
+  document.addEventListener("focusout", event => { if(event.target.closest?.(".cs-list-memo-preview")) hide(); });
+  window.addEventListener("scroll", hide, true);
 }
 
 function renderCsBranchTabs() {
@@ -518,15 +508,6 @@ function initCs() {
     });
   }
 
-  const stateSel = document.getElementById("csStateFilter");
-  if (stateSel) {
-    stateSel.innerHTML = `<option value="">全状態</option><option value="normal">正常</option><option value="problem">問題</option><option value="issue">課題</option>`;
-    stateSel.addEventListener("change", e => {
-      csFilterState = e.target.value;
-      renderCsView();
-    });
-  }
-
   const statusSel = document.getElementById("csStatusFilter");
   if (statusSel) {
     statusSel.innerHTML = `<option value="">全CSステータス</option>` + CS_PHASES.map(phase => `<option value="${escapeHtml(phase.key)}">${escapeHtml(getVisitStatusLabel(phase.key))}</option>`).join("");
@@ -535,6 +516,7 @@ function initCs() {
       renderCsView();
     });
   }
+  initMemoPreviewPopup();
 
   // 登録フォームの担当者プルダウン
   if (document.getElementById("csSalesPerson")) populateCsStaffSelect();
@@ -836,16 +818,6 @@ async function deleteVisit(projectId, index) {
   }
 }
 
-async function updateCsState(projectId, state) {
-  try {
-    await db.collection("cs_projects").doc(projectId).update({ state, taskStatus: state });
-    showToast("状態を更新しました");
-  } catch (err) {
-    console.error(err);
-    showToast("状態の更新に失敗しました", "error");
-  }
-}
-
 async function updateCsTaskPhase(projectId, phaseKey) {
   const phase = getCsPhase(phaseKey);
   const firstItem = phase.items[0]?.item || "";
@@ -914,7 +886,6 @@ function openCsDetailModal(id) {
         <tr><th>病床移動運用</th><td>${escapeHtml(p.moveOp||"")}</td></tr>
         <tr><th>病床番号変更担当</th><td>${escapeHtml(p.bedNumStaff||"")}</td></tr>
         <tr><th>床頭台移動担当</th><td>${escapeHtml(p.bedMoveStaff||"")}</td></tr>
-        <tr><th>状態</th><td>${escapeHtml(getCsState(p))}</td></tr>
         <tr><th>メモ</th><td style="white-space:pre-wrap;">${escapeHtml(p.memo||"")}</td></tr>
         ${visitRows}
       </tbody>
@@ -1036,8 +1007,6 @@ function parseCsTableText(text) {
       moveOp: getTableValue(row, indexes, ["病床移動時の運用"]),
       bedNumStaff: getTableValue(row, indexes, ["病床番号変更担当"]),
       bedMoveStaff: getTableValue(row, indexes, ["床頭台移動担当"]),
-      state: getTableValue(row, indexes, ["状態"]) || "正常",
-      taskStatus: getTableValue(row, indexes, ["状態"]) || "正常",
       memo: getTableValue(row, indexes, ["メモ"]),
       visits: [],
     };
@@ -1069,8 +1038,6 @@ function normalizeCsImportItems(json) {
     moveOp:          String(item.moveOp       || "").trim(),
     bedNumStaff:     String(item.bedNumStaff  || "").trim(),
     bedMoveStaff:    String(item.bedMoveStaff || "").trim(),
-    state:           String(item.state        || "正常").trim(),
-    taskStatus:      String(item.taskStatus   || item.state || "正常").trim(),
     memo:            String(item.memo         || "").trim(),
     visits:          Array.isArray(item.visits) ? item.visits : [],
     createdAt:       new Date().toISOString(),

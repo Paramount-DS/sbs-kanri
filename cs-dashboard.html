@@ -8,8 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-1"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260915-3"/>
-  <link rel="stylesheet" href="cs-dashboard.css?v=20260915-3"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-4"/>
+  <link rel="stylesheet" href="cs-dashboard.css?v=20260915-4"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -21,16 +21,19 @@
       <span class="cs-branch-tag">導入支援ダッシュボード</span>
       <strong id="dashboardHospitalName" class="dashboard-hospital-name">読み込み中...</strong>
     </div>
+    <nav class="header-main-nav" aria-label="メイン機能">
+      <a href="index.html">案件管理</a>
+      <a href="cs.html" class="active">導入支援</a>
+      <a href="schedule.html#calendar">カレンダー</a>
+      <a href="schedule.html#timeline">工程表</a>
+    </nav>
     <div class="cs-header-actions">
       <a href="javascript:history.back()">もどる</a>
       <a href="cs.html" class="btn-cs-list">カード</a>
       <a href="cs-list.html" class="btn-cs-list">一覧</a>
-      <a href="index.html" class="btn-back-project">案件管理</a>
     </div>
   </div>
 </header>
-<nav class="app-section-nav" aria-label="メイン機能"><a href="index.html">案件管理</a><a href="cs.html" class="active">導入支援</a><a href="schedule.html#calendar">カレンダー</a><a href="schedule.html#timeline">工程表</a></nav>
-
 <main id="csDashboardRoot" class="dashboard-page">
   <div class="dashboard-summary" id="dashboardSummary"></div>
   <section class="dashboard-phase-panel" id="dashboardPhasePanel"></section>
@@ -56,7 +59,7 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
-<script src="cs.js?v=20260915-3"></script>
-<script src="cs-dashboard.js?v=20260915-3"></script>
+<script src="cs.js?v=20260915-4"></script>
+<script src="cs-dashboard.js?v=20260915-4"></script>
 </body>
 </html>
