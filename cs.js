@@ -646,7 +646,7 @@ function openCsEditModal(id) {
   document.getElementById("csMemo").value         = p.memo || "";
   document.getElementById("csProjectType").value = p.projectType || "new";
   document.getElementById("csNewOrExisting").value = p.newOrExisting || "";
-  ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou","ScheduleStatus"].forEach(suffix => {
+  ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou"].forEach(suffix => {
     const key = suffix.charAt(0).toLowerCase() + suffix.slice(1);
     document.getElementById(`cs${suffix}`).value = p[key] || "";
   });
