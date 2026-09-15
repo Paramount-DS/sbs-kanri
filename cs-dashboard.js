@@ -2,7 +2,7 @@
 
 const DASHBOARD_DEFAULTS = {
   version: 1,
-  currentPhase: "操作学習",
+  currentPhase: "活用支援/オンボーディング",
   dataSources: {
     automaticFields: ["loginCount","activeUsers","usageDays","usedFeatures","alertCount","dataViews","dashboardViews","connectedDevices","inquiryCount","unresolvedIssues","visits","renewalDate"],
     manualFields: ["kpiTarget","kpiCurrent","monthlySavedHours","hourlyLaborCost","renewalProbability","caseStudy","visitAcceptance","speakingSupport","memo"],
@@ -154,7 +154,7 @@ function basicRows(p) {
 }
 function categoryRows(category,p,c) {
   const d=getDashboardData(p), x=d[category];
-  if(category==="csActivity") return [["最終訪問日",shown(c.newestVisit)],["経過日数",shown(c.visitElapsed,"日")],["訪問回数",shown((p.visits||[]).length||x.visitCount||0)],
+  if(category==="csActivity") return [["最終訪問日",shown(c.newestVisit)],["経過日数",shown(c.visitElapsed,"日")],["訪問回数",shown((p.visits||[]).filter(isVisitRecord).length||x.visitCount||0)],
     ["定例会回数",shown(x.regularMeetingCount)],["問い合わせ件数",shown(x.inquiryCount)],["未解決課題数",shown(x.unresolvedIssues)],
     ["教育実施回数",shown(x.trainingCount)],["最終対応日",shown(c.newestContact)],["次回対応予定日",shown(c.nextContact)]];
   if(category==="usage") return [["システム利用率",percent(c.systemUsage)],["アクティブ率",percent(c.activeRate)],["機能活用率",percent(c.featureRate)],
@@ -186,16 +186,17 @@ function categoryRisk(category,c) {
 }
 
 function renderSummary(p,c) {
-  const data=getDashboardData(p), phase=data.currentPhase;
   const visits=p.visits||[];
-  const visitCount=visits.filter(v=>v.startDate||v.endDate).length;
+  const phase=getProjectActivityPhase(p);
+  const visitCount=visits.filter(isVisitRecord).length;
+  const currentLatest=getLatestPhaseVisit(p,phase), currentLatestDate=currentLatest?.endDate||currentLatest?.startDate||"";
   const items=[
     ["現在フェーズ",getVisitStatusLabel(phase),"入力予定を確認","","summary-phase"],
     ["対応回数",`${visits.length}`,"累計記録数","","summary-response"],
     ["訪問回数",`${visitCount}`,"累計記録数","","summary-visits"],
     ["稼働期間",shown(daysBetween(p.startDate)),"日","","summary-duration"],
     ["更新まで",shown(c.renewalDays),"日","","summary-renewal"],
-    ["最終訪問から",shown(c.visitElapsed),"日経過","","summary-lastvisit"]
+    ["最終対応から",shown(daysBetween(currentLatestDate)),"日経過","","summary-lastvisit"]
   ];
   document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>`<div class="dashboard-summary-item ${cls} ${size}"><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`).join("");
 }
@@ -204,22 +205,24 @@ function renderPhasePanel(p) {
 }
 function renderVisitsCard(p) {
   const visits=(p.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
-  return `<div class="dashboard-visit-summary"><strong>${visits.length}</strong><span>累計記録数</span></div>${visits.map(({visit},rowIndex)=>`<div class="dashboard-visit-row"><b>${rowIndex+1}</b><time>${escapeHtml(visit.endDate||visit.startDate||"-")}</time><div><strong>${escapeHtml(getVisitStatusLabel(visit.status))}</strong><span>${escapeHtml(visit.taskItem||visit.freeText||"-")}</span></div></div>`).join("")||'<p class="dashboard-empty">訪問記録がありません</p>'}`;
+  return `<div class="dashboard-visit-summary"><strong>${visits.length}</strong><span>累計対応回数</span></div>${visits.length?`<div class="dashboard-history-table"><div class="dashboard-history-head"><span>訪問日</span><span>フェーズ</span><span>活動区分</span><span>訪問内容</span></div>${visits.map(({visit})=>`<div class="dashboard-history-row"><time>${escapeHtml(visit.endDate||visit.startDate||"-")}${isVisitRecord(visit)?'<em>訪問</em>':''}</time><strong>${escapeHtml(getVisitStatusLabel(visit.status))}</strong><span>${escapeHtml(visit.taskItem||"-")}</span><p>${escapeHtml(visit.freeText||"-")}</p></div>`).join("")}</div>`:'<p class="dashboard-empty">訪問記録がありません</p>'}`;
 }
 
 function renderActivityPanel(p,c,type) {
   const onboarding=type==="onboarding";
   const visits=(p.visits||[]).filter(visit=>{
     const status=normalizeVisitStatus(visit.status);
-    return onboarding ? ["操作学習","支援計画"].includes(status) : !["操作学習","支援計画"].includes(status);
+    return status === (onboarding ? "活用支援/オンボーディング" : "活用支援/サポート");
   }).sort((a,b)=>(b.endDate||b.startDate||"").localeCompare(a.endDate||a.startDate||""));
   const latest=visits[0];
   const latestDate=latest?.endDate||latest?.startDate||"";
   const elapsed=daysBetween(latestDate);
   const title=onboarding?"オンボーディング活動":"サポート活動";
   const panel=onboarding?"onboarding":"support";
-  const risk=elapsed===null?badge("未登録","is-empty"):elapsed>=60?badge("未訪問リスク","is-risk"):elapsed>=30?badge("要フォロー","is-caution"):badge("良好","is-good");
-  const rows=[["最終訪問日",shown(latestDate)],["経過日数",shown(elapsed,"日")],["訪問回数",shown(visits.length)],["最終対応日",shown(latestDate)],["次回対応予定日",shown(c.nextContact)]];
+  const supportStarted=(p.visits||[]).some(visit=>isSupportSideStatus(visit.status));
+  const warningDays=onboarding?60:150, dangerDays=onboarding?120:300;
+  const risk=onboarding&&supportStarted?badge("サポート移行済","is-good"):elapsed===null?badge("未登録","is-empty"):elapsed>=dangerDays?badge("要対応","is-risk"):elapsed>=warningDays?badge("要フォロー","is-caution"):badge("良好","is-good");
+  const rows=[["最終活動日",shown(latestDate)],["経過日数",onboarding&&supportStarted?"—（サポート移行済）":shown(elapsed,"日")],["対応回数",shown(visits.length)],["訪問回数",shown(visits.filter(isVisitRecord).length)],["次回対応予定日",shown(c.nextContact)]];
   return `<article class="dashboard-category-card panel-${panel}"><div class="dashboard-card-head"><div><h2>${title}</h2><p>訪問・対応状況</p></div><div>${risk}<button onclick="openDashboardModal('csActivity')">Input</button></div></div>${rowsHtml(rows)}</article>`;
 }
 function dashboardPanel(category,title,subtitle,body,c) {
@@ -273,7 +276,7 @@ function workReductionFieldsHtml(systemType,work){if(!systemType)return '<p clas
 function workReductionForm(raw){const work=mergedWorkReduction(raw);return `<div class="form-group dashboard-work-system"><label class="form-label">システム選択</label><select class="form-select" name="systemType" onchange="changeWorkReductionSystem(this.value)"><option value=""${!work.systemType?" selected":""}>未選択</option><option value="SBS"${work.systemType==="SBS"?" selected":""}>SBS</option><option value="Connect"${work.systemType==="Connect"?" selected":""}>Connect</option></select></div><div id="workReductionFields" class="work-reduction-fields">${workReductionFieldsHtml(work.systemType,work)}</div>`;}
 function changeWorkReductionSystem(systemType){const work=mergedWorkReduction(dashboardProject.workReduction||{}),target=document.getElementById("workReductionFields");if(target)target.innerHTML=workReductionFieldsHtml(systemType,work);}
 function csActivityForm(data){
-  const latest=latestVisitDate(dashboardProject),count=(dashboardProject?.visits||[]).length;
+  const latest=latestVisitDate(dashboardProject),count=(dashboardProject?.visits||[]).filter(isVisitRecord).length;
   const dateInput=(key,label)=>`<div class="form-group"><label class="form-label">${label}</label><input class="form-input" name="${key}" type="date" value="${escapeHtml(data[key]||"")}"${latest?` max="${previousDate(latest)}"`:""}><small class="dashboard-form-note">訪問履歴の最終日 ${latest||"-"} より過去のみ補足登録できます</small></div>`;
   const others=DASHBOARD_FIELDS.csActivity.filter(([key])=>!["lastVisitDate","lastContactDate","visitCount"].includes(key)).map(field=>inputHtml(field,data[field[0]])).join("");
   return `<div class="form-group"><label class="form-label">訪問回数</label><input class="form-input" type="text" value="${count}件" readonly></div>${dateInput("lastVisitDate","最終訪問日（補足）")}${dateInput("lastContactDate","最終対応日（補足）")}${others}`;
@@ -295,7 +298,7 @@ function visitEditorForm(p) {
   const visit=(p.visits||[])[dashboardVisitEditIndex];
   if(!visit) return '<p class="dashboard-empty">編集する訪問履歴が見つかりません</p>';
   const status=normalizeVisitStatus(visit.status),phase=getCsPhase(status),selectedTask=phase.items.find(item=>item.item===visit.taskItem)||phase.items[0];
-  return `<div class="dashboard-editor-back"><button type="button" onclick="showDashboardVisitList()">← 全履歴へ戻る</button></div><input type="hidden" name="visitIndex" value="${dashboardVisitEditIndex}"><div class="form-group"><label class="form-label">フェーズ / CSステータス</label><select class="form-select" name="visitStatus" onchange="updateDashboardVisitTasks(this.value)">${CS_PHASES.map(row=>`<option value="${row.key}"${row.key===status?" selected":""}>${escapeHtml(getVisitStatusLabel(row.key))}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">項目</label><select class="form-select" id="dashboardVisitTask" name="taskItem" onchange="updateDashboardVisitTaskDetail()">${phase.items.map(item=>`<option value="${escapeHtml(item.item)}"${item.item===selectedTask?.item?" selected":""}>${escapeHtml(item.item)}</option>`).join("")}</select></div><div id="dashboardVisitTaskDetail" class="visit-task-detail"></div><div class="form-group dashboard-score-field"><label class="form-label">達成度 <strong id="dashboardVisitScoreValue">${Number(visit.score)||0}</strong></label><input class="visit-score-range" name="score" type="range" min="0" max="100" value="${Number(visit.score)||0}" oninput="document.getElementById('dashboardVisitScoreValue').textContent=this.value"><div class="visit-score-scale"><span>0</span><span>100</span></div></div>${inputHtml(["startDate","訪問日 / 対応日（開始）","date"],visit.startDate||"")}${inputHtml(["endDate","訪問日 / 対応日（終了）","date"],visit.endDate||visit.startDate||"")}<div class="form-group"><label class="form-label">フリー入力</label><textarea class="form-textarea" name="freeText" rows="4">${escapeHtml(visit.freeText||"")}</textarea></div>`;
+  return `<div class="dashboard-editor-back"><button type="button" onclick="showDashboardVisitList()">← 全履歴へ戻る</button></div><input type="hidden" name="visitIndex" value="${dashboardVisitEditIndex}"><div class="form-group"><label class="form-label">フェーズ</label><select class="form-select" name="visitStatus" onchange="updateDashboardVisitTasks(this.value)">${CS_PHASES.map(row=>`<option value="${row.key}"${row.key===status?" selected":""}>${escapeHtml(getVisitStatusLabel(row.key))}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">活動区分</label><select class="form-select" id="dashboardVisitTask" name="taskItem">${phase.items.map(item=>`<option value="${escapeHtml(item.item)}"${item.item===selectedTask?.item?" selected":""}>${escapeHtml(item.item)}</option>`).join("")}</select></div><div class="form-group visit-check-item"><label><input type="checkbox" name="isVisit"${isVisitRecord(visit)?" checked":""}> 訪問</label></div>${inputHtml(["startDate","訪問日 / 対応日（開始）","date"],visit.startDate||"")}${inputHtml(["endDate","訪問日 / 対応日（終了）","date"],visit.endDate||visit.startDate||"")}<div class="form-group"><label class="form-label">フリー入力</label><textarea class="form-textarea" name="freeText" rows="4">${escapeHtml(visit.freeText||"")}</textarea></div>`;
 }
 function dashboardSaveButton(){return document.querySelector("#dashboardEditForm .modal-footer .btn-primary");}
 function showDashboardVisitList(){dashboardVisitEditIndex=-1;document.getElementById("dashboardModalTitle").textContent="訪問履歴 Input";document.getElementById("dashboardModalBody").innerHTML=visitsForm(dashboardProject);const button=dashboardSaveButton();if(button)button.style.display="none";}
@@ -349,7 +352,7 @@ async function saveDashboardForm(event) {
         const latest=latestVisitDate(dashboardProject);
         if(latest&&values.lastVisitDate&&values.lastVisitDate>=latest) throw new Error(`最終訪問日は ${latest} より過去を指定してください`);
         if(latest&&values.lastContactDate&&values.lastContactDate>=latest) throw new Error(`最終対応日は ${latest} より過去を指定してください`);
-        values.visitCount=(dashboardProject.visits||[]).length;
+        values.visitCount=(dashboardProject.visits||[]).filter(isVisitRecord).length;
       }
       data[category]={...data[category],...values}; data.version=DASHBOARD_DEFAULTS.version; data.updatedAt=new Date().toISOString();
       await dashboardDocRef.set({csDashboard:data},{merge:true});
@@ -363,7 +366,7 @@ async function saveDashboardVisit(values){
   const visits=[...(dashboardProject.visits||[])],current=visits[dashboardVisitEditIndex];
   if(!current) throw new Error("訪問履歴が見つかりません");
   const phase=getCsPhase(normalizeVisitStatus(values.visitStatus)),task=phase.items.find(item=>item.item===values.taskItem)||phase.items[0];
-  visits[dashboardVisitEditIndex]={...current,status:values.visitStatus,taskItem:task?.item||values.taskItem||"",taskContent:task?.content||"",taskEffect:task?.effect||"",score:Math.max(0,Math.min(100,Number(values.score)||0)),startDate:values.startDate||values.endDate,endDate:values.endDate||values.startDate,freeText:values.freeText||"",updatedAt:new Date().toISOString()};
+  visits[dashboardVisitEditIndex]={...current,status:normalizeVisitStatus(values.visitStatus),taskItem:task?.item||values.taskItem||"",taskContent:task?.content||"",taskEffect:task?.effect||"",isVisit:values.isVisit==="on",startDate:values.startDate||values.endDate,endDate:values.endDate||values.startDate,freeText:values.freeText||"",updatedAt:new Date().toISOString()};
   await dashboardDocRef.update({visits});
 }
 async function deleteDashboardVisit(index){if(!window.confirm("この訪問履歴を削除しますか？"))return;const visits=[...(dashboardProject.visits||[])];if(index<0||index>=visits.length)return;visits.splice(index,1);try{await dashboardDocRef.update({visits});dashboardProject={...dashboardProject,visits};showDashboardVisitList();showToast("削除しました");}catch(e){console.error(e);showToast("削除に失敗しました","error");}}
@@ -381,7 +384,7 @@ async function migrateDashboard(snapshot){
   const project=snapshot.data(), merged=mergedDashboard(project.csDashboard||{});
   const mergedWork=mergedWorkReduction(project.workReduction||{});
   const calculatedUsageDays=operatingDays(project.startDate);
-  const calculatedVisitCount=(project.visits||[]).length;
+  const calculatedVisitCount=(project.visits||[]).filter(isVisitRecord).length;
   merged.usage.usageDays=calculatedUsageDays;
   merged.csActivity.visitCount=calculatedVisitCount;
   if (!merged.usage.roles?.length) {

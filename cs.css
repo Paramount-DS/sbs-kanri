@@ -324,6 +324,10 @@
 /* 添付デザイン準拠カード */
 .cs-card { background:#fff0f4; border-color:#ff6b73; gap:10px; }
 .cs-card::before { background:#ff535c; }
+.cs-card.cs-card-warning { background:#fff8dd; border-color:#e7b73d; }
+.cs-card.cs-card-warning::before { background:#e7b73d; }
+.cs-card.cs-card-danger { background:#fff0f0; border-color:#e54d55; }
+.cs-card.cs-card-danger::before { background:#d9333d; }
 .cs-card-head-grid { grid-template-columns:1fr; }
 .cs-card-title { font-size:17px; padding-right:42px; }
 .cs-products { gap:7px; }
@@ -332,6 +336,10 @@
 .last-visit-green { background:#e8f6e9; border-color:#79c783; }
 .cs-card-actions { grid-template-columns:minmax(145px,1.8fr) repeat(3,auto); }
 .btn-cs-next { min-height:38px; font-weight:700; }
+.visit-check-item label { display:flex; align-items:center; gap:9px; font-weight:700; cursor:pointer; }
+.visit-check-item input { width:18px; height:18px; accent-color:var(--cs-primary); }
+.cs-visit-kind { padding:2px 7px; border-radius:999px; background:#e8f6e9; color:#27733a; font-size:10px; font-weight:700; }
+.cs-visit-kind.is-contact { background:#f2f3f5; color:#64676d; }
 @media (max-width:600px) {
   .cs-install-info { grid-template-columns:1fr 1fr; }
   .cs-card-actions { grid-template-columns:1fr repeat(3,auto); }

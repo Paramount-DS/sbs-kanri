@@ -18,92 +18,27 @@ const CS_STATE_OPTIONS = [
 
 const CS_PHASES = [
   {
-    key: "操作学習",
-    label: "操作学習",
-    goal: "On-boarding",
+    key: "活用支援/オンボーディング",
+    label: "活用支援/オンボーディング",
+    goal: "オンボーディング",
     items: [
-      { item:"勉強会", content:"操作方法の勉強会を実施", effect:"基本操作の習得とスムーズな利用開始" },
+      { item:"オンボーディング①", content:"", effect:"" },
+      { item:"オンボーディング②", content:"", effect:"" },
+      { item:"オンボーディング③", content:"", effect:"" },
+      { item:"オンボーディング④", content:"", effect:"" },
+      { item:"オンボーディング⑤", content:"", effect:"" },
+      { item:"オンボーディング⑥", content:"", effect:"" },
+      { item:"その他", content:"", effect:"" },
     ],
   },
   {
-    key: "支援計画",
-    label: "支援計画",
-    goal: "早期稼働",
+    key: "活用支援/サポート",
+    label: "活用支援/サポート",
+    goal: "サポート",
     items: [
-      { item:"キックオフ実施", content:"導入目的・体制・スケジュール共有", effect:"関係者の認識統一、導入遅延防止" },
-      { item:"導入目的共有", content:"解決したい課題や期待効果の整理", effect:"ゴールの明確化" },
-      { item:"成功指標設定（KPI）", content:"効果測定指標の設定", effect:"導入成果を定量評価可能" },
-      { item:"環境構築", content:"サーバ・ネットワーク・端末設定", effect:"安定稼働開始" },
-      { item:"設定支援", content:"システム初期設定支援", effect:"運用開始までの負荷軽減" },
-      { item:"マニュアル提供", content:"操作資料・運用資料整備", effect:"問い合わせ削減" },
-      { item:"初期教育", content:"操作研修・管理者教育", effect:"早期運用開始" },
-      { item:"運用設計", content:"通知ルールや業務フロー設計", effect:"現場定着の促進" },
-    ],
-  },
-  {
-    key: "定着",
-    label: "定着",
-    goal: "利用率向上",
-    items: [
-      { item:"利用状況モニタリング", content:"利用頻度・アクセス状況確認", effect:"利用低下の早期発見" },
-      { item:"ログ分析", content:"利用傾向や課題分析", effect:"改善ポイントの可視化" },
-      { item:"未利用機能活用提案", content:"利用されていない機能の提案", effect:"活用率向上" },
-      { item:"定例会実施", content:"定期的な情報共有と課題確認", effect:"継続利用促進" },
-      { item:"問題点ヒアリング", content:"現場課題の収集", effect:"解約リスク低減" },
-      { item:"利用者教育", content:"追加研修・新規職員教育", effect:"操作定着" },
-      { item:"管理者教育", content:"分析機能や運用管理教育", effect:"自走化促進" },
-    ],
-  },
-  {
-    key: "活用促進",
-    label: "活用促進",
-    goal: "業務改善",
-    items: [
-      { item:"データ分析支援", content:"利用データの分析支援", effect:"データ活用文化醸成" },
-      { item:"ベストプラクティス紹介", content:"活用成功事例の共有", effect:"活用レベル向上" },
-      { item:"他施設事例紹介", content:"他施設の運用紹介", effect:"新たな活用アイデア創出" },
-      { item:"業務改善提案", content:"データに基づく改善提案", effect:"業務効率化" },
-      { item:"KPI達成支援", content:"指標改善活動支援", effect:"導入目標達成" },
-      { item:"新機能案内", content:"バージョンアップや新機能紹介", effect:"製品価値向上" },
-    ],
-  },
-  {
-    key: "成果創出",
-    label: "成果創出",
-    goal: "Outcome/ROI",
-    items: [
-      { item:"導入効果測定", content:"導入前後比較分析", effect:"効果の可視化" },
-      { item:"KPI評価", content:"設定した指標の達成確認", effect:"成果確認" },
-      { item:"ROI算出", content:"業務削減効果算出、費用対効果評価", effect:"投資価値の証明" },
-      { item:"成果報告会", content:"経営層・管理者への報告", effect:"継続利用・横展開促進" },
-      { item:"院内展開支援", content:"他病棟・他部署への展開支援", effect:"利用拡大" },
-      { item:"活用レポート提供", content:"定期的な成果報告資料作成", effect:"意思決定支援" },
-    ],
-  },
-  {
-    key: "拡大",
-    label: "拡大",
-    goal: "更新・追加受注",
-    items: [
-      { item:"契約更新管理", content:"更新時期管理・事前フォロー", effect:"解約防止" },
-      { item:"更新提案", content:"導入効果を踏まえた継続提案", effect:"更新率向上" },
-      { item:"機能追加提案", content:"オプションや追加機能提案", effect:"単価向上" },
-      { item:"ライセンス追加提案", content:"利用範囲拡大提案", effect:"売上拡大" },
-      { item:"他部署展開提案", content:"他病棟・他施設展開提案", effect:"契約拡大" },
-      { item:"上位プラン提案", content:"上位サービス提案", effect:"LTV向上" },
-    ],
-  },
-  {
-    key: "共創",
-    label: "共創",
-    goal: "共創・事例創出",
-    items: [
-      { item:"ユーザー会参加", content:"ユーザー同士の交流機会提供", effect:"ロイヤルティ向上" },
-      { item:"事例取材", content:"成功事例の作成・公開", effect:"ブランド価値向上" },
-      { item:"講演協力", content:"学会・セミナー登壇支援", effect:"認知拡大" },
-      { item:"紹介依頼", content:"他施設への紹介依頼", effect:"新規案件創出" },
-      { item:"共同プロジェクト", content:"研究・実証実験実施", effect:"関係強化" },
-      { item:"リファレンス顧客化", content:"見学受入・営業協力", effect:"営業効率向上" },
+      { item:"現地サポート", content:"", effect:"" },
+      { item:"遠隔サポート", content:"", effect:"" },
+      { item:"その他", content:"", effect:"" },
     ],
   },
 ];
@@ -171,34 +106,19 @@ function visitLabel(index, status) {
 // 最終訪問日からのカラー判定
 // =============================================
 function getVisitColorClass(p) {
-  const visits = p.visits || [];
-  if (!visits.length) return "";
-  const last = visits[visits.length - 1];
-  const dateStr = last.endDate || last.startDate;
-  if (!dateStr) return "";
-  const lastDate = new Date(dateStr);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const months = (today.getFullYear() - lastDate.getFullYear()) * 12
-               + (today.getMonth() - lastDate.getMonth());
-  if (months <= 4)  return "cs-status-green";
-  if (months <= 8)  return "cs-status-yellow";
-  return "cs-status-orange";
+  return getCardFreshness(p).cardClass;
 }
 
 function getLastVisitInfo(p) {
-  const visits = p.visits || [];
-  if (!visits.length) return { text: "訪問記録なし", cls: "last-visit-none" };
-  const last = visits[visits.length - 1];
-  const dateStr = last.endDate || last.startDate;
+  const freshness = getCardFreshness(p);
+  const dateStr = freshness.latest?.endDate || freshness.latest?.startDate;
+  if (!freshness.latest) return { text: "対応記録なし", cls: "last-visit-none" };
   if (!dateStr) return { text: "日付未設定", cls: "last-visit-none" };
   const lastDate = new Date(dateStr);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const months = (today.getFullYear() - lastDate.getFullYear()) * 12
-               + (today.getMonth() - lastDate.getMonth());
   const fmt = lastDate.toLocaleDateString("ja-JP", { year:"numeric", month:"2-digit", day:"2-digit" });
-  if (months <= 4)  return { text: `最終対応：${fmt}（${months}か月前）`, cls: "last-visit-green" };
-  if (months <= 8)  return { text: `最終対応：${fmt}（${months}か月前）`, cls: "last-visit-yellow" };
-  return { text: `最終対応：${fmt}（${months}か月前）⚠️`, cls: "last-visit-orange" };
+  const warning = freshness.cardClass === "cs-card-warning";
+  const danger = freshness.cardClass === "cs-card-danger";
+  return { text: `最終対応：${fmt}（${freshness.months}か月前）${danger ? " ⚠️" : ""}`, cls: danger ? "last-visit-orange" : warning ? "last-visit-yellow" : "last-visit-green" };
 }
 
 // =============================================
@@ -235,32 +155,47 @@ function getLatestVisit(p) {
 }
 
 function getVisitStatusLabel(status) {
-  const labels = {
-    "操作学習": "操作学習/On-boarding",
-    "支援計画": "支援計画/Deployment",
-    "定着": "定着/Adoption",
-    "活用促進": "活用促進/Engagement",
-    "成果創出": "成果創出/Outcome/ROI",
-    "拡大": "拡大/Expansion",
-    "事例創出": "共創/Advocacy",
-    "共創": "共創/Advocacy",
-    "拡大/事例創出": "拡大/Expansion",
-  };
-  if (status === "onboarding" || status === "OBD") return labels["操作学習"];
-  if (status === "support" || status === "SUP" || status === "活用") return labels["活用促進"];
-  return labels[status] || status || "—";
+  return normalizeVisitStatus(status);
 }
 
 function normalizeVisitStatus(status) {
-  if (status === "onboarding" || status === "OBD") return "操作学習";
-  if (status === "support" || status === "SUP" || status === "活用") return "活用促進";
-  if (status === "事例創出") return "共創";
-  if (status === "拡大/事例創出") return "拡大";
-  return status || "操作学習";
+  const value = String(status || "").trim();
+  if (["活用支援/サポート","support","SUP","活用","定着","活用促進","成果創出","拡大","事例創出","共創","拡大/事例創出"].includes(value)) return "活用支援/サポート";
+  return "活用支援/オンボーディング";
 }
 
 function isSupportSideStatus(status) {
-  return ["support", "SUP", "活用", "活用促進", "成果創出", "拡大", "事例創出", "共創"].includes(status);
+  return normalizeVisitStatus(status) === "活用支援/サポート";
+}
+
+function isVisitRecord(visit) {
+  return visit?.isVisit === true || typeof visit?.isVisit === "undefined";
+}
+
+function getProjectActivityPhase(p) {
+  return (p.visits || []).some(visit => isSupportSideStatus(visit.status))
+    ? "活用支援/サポート"
+    : "活用支援/オンボーディング";
+}
+
+function getLatestPhaseVisit(p, phase = getProjectActivityPhase(p)) {
+  return (p.visits || []).filter(visit => normalizeVisitStatus(visit.status) === phase)
+    .sort((a,b) => (b.endDate || b.startDate || "").localeCompare(a.endDate || a.startDate || ""))[0] || null;
+}
+
+function getCardFreshness(p) {
+  const phase = getProjectActivityPhase(p);
+  const latest = getLatestPhaseVisit(p, phase);
+  const dateStr = latest?.endDate || latest?.startDate;
+  if (!dateStr) return { phase, latest, months: 0, cardClass: "" };
+  const lastDate = new Date(dateStr);
+  const today = new Date(); today.setHours(0,0,0,0);
+  let months = (today.getFullYear() - lastDate.getFullYear()) * 12 + today.getMonth() - lastDate.getMonth();
+  if (today.getDate() < lastDate.getDate()) months -= 1;
+  months = Math.max(0, months);
+  const warningAt = phase === "活用支援/サポート" ? 5 : 2;
+  const dangerAt = phase === "活用支援/サポート" ? 10 : 4;
+  return { phase, latest, months, cardClass: months >= dangerAt ? "cs-card-danger" : months >= warningAt ? "cs-card-warning" : "" };
 }
 
 function getLatestVisitDateText(p) {
@@ -297,8 +232,7 @@ function getCsPhase(key) {
 }
 
 function getCurrentCsPhase(p) {
-  const status = normalizeVisitStatus(getLatestVisit(p)?.status);
-  return getCsPhase(status);
+  return getCsPhase(getProjectActivityPhase(p));
 }
 
 function getCsTaskSelection(p) {
@@ -362,7 +296,7 @@ function createCsCard(p) {
           <span class="cs-visit-status-badge ${v.status}">
             ${escapeHtml(getVisitStatusLabel(v.status))}
           </span>
-          <span class="cs-visit-score">達成度 ${Number(v.score) || 0}</span>
+          ${isVisitRecord(v) ? `<span class="cs-visit-kind">訪問</span>` : `<span class="cs-visit-kind is-contact">対応</span>`}
           <button type="button" class="btn-cs-visit-edit" onclick="editCsVisit(event,'${p.id}',${realIdx})">編集</button>
           <button type="button" class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
@@ -378,7 +312,7 @@ function createCsCard(p) {
     : "未設定";
 
   return `
-    <div class="cs-card" data-id="${p.id}">
+    <div class="cs-card ${getVisitColorClass(p)}" data-id="${p.id}">
       ${showEos ? `<span class="eos-badge">EOS</span>` : ""}
       <div class="cs-card-head-grid">
         <div class="cs-card-identity">
@@ -801,7 +735,9 @@ function updateVisitTaskOptions(selectedItem = "") {
 function updateVisitTaskDetail() {
   const phase = getCsPhase(normalizeVisitStatus(document.getElementById("visitStatus").value));
   const selected = phase.items.find(item => item.item === document.getElementById("visitTaskItem").value) || phase.items[0];
-  document.getElementById("visitTaskDetail").innerHTML = selected ? `
+  const target = document.getElementById("visitTaskDetail");
+  if (!target) return;
+  target.innerHTML = selected ? `
     <div><span>ゴール</span><strong>${escapeHtml(phase.goal)}</strong></div>
     <div><span>内容</span><p>${escapeHtml(selected.content)}</p></div>
     <div><span>効果・結果</span><p>${escapeHtml(selected.effect)}</p></div>` : "";
@@ -818,8 +754,7 @@ function openVisitModal(projectId, editIndex = -1) {
   document.getElementById("visitHospitalLabel").textContent = p.hospitalName;
   document.getElementById("visitProjectId").value         = projectId;
   document.getElementById("visitEditIndex").value         = editIndex;
-  document.getElementById("visitScore").value = 0;
-  document.getElementById("visitScoreValue").textContent = "0";
+  document.getElementById("visitIsVisit").checked = false;
   if (targetVisit) {
     document.getElementById("visitStatus").value = normalizeVisitStatus(targetVisit.status);
     updateVisitTaskOptions(targetVisit.taskItem || "");
@@ -827,10 +762,9 @@ function openVisitModal(projectId, editIndex = -1) {
     document.getElementById("visitEndDate").value = targetVisit.endDate || "";
     document.getElementById("visitFreeText").value = targetVisit.freeText || "";
     document.getElementById("visitAssignee").value = targetVisit.assignee || "";
-    document.getElementById("visitScore").value = Number(targetVisit.score) || 0;
-    document.getElementById("visitScoreValue").textContent = String(Number(targetVisit.score) || 0);
+    document.getElementById("visitIsVisit").checked = isVisitRecord(targetVisit);
   } else {
-    document.getElementById("visitStatus").value = normalizeVisitStatus(getLatestVisit(p)?.status || "操作学習");
+    document.getElementById("visitStatus").value = getProjectActivityPhase(p);
     updateVisitTaskOptions();
     document.getElementById("visitAssignee").value = p.csPerson || "";
   }
@@ -858,7 +792,7 @@ async function saveVisit(e) {
     status:    document.getElementById("visitStatus").value,
     taskItem:  document.getElementById("visitTaskItem").value,
     assignee:  document.getElementById("visitAssignee").value.trim(),
-    score:     Math.max(0, Math.min(100, Number(document.getElementById("visitScore").value) || 0)),
+    isVisit:   document.getElementById("visitIsVisit").checked,
     startDate: document.getElementById("visitStartDate").value,
     endDate:   document.getElementById("visitEndDate").value,
     freeText:  document.getElementById("visitFreeText").value.trim(),

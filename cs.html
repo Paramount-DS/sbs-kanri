@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-2"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260915-2"/>
+  <link rel="stylesheet" href="cs.css?v=20260915-3"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -200,30 +200,22 @@
         <input type="hidden" id="visitProjectId"/>
         <input type="hidden" id="visitEditIndex" value="-1"/>
         <div class="form-group">
-          <label class="form-label">現在のフェーズ / 次の訪問ステータス</label>
+          <label class="form-label">フェーズ</label>
           <select id="visitStatus" class="status-select-cs" onchange="updateVisitTaskOptions()">
-            <option value="操作学習">操作学習/On-boarding</option>
-            <option value="支援計画">支援計画/Deployment</option>
-            <option value="定着">定着/Adoption</option>
-            <option value="活用促進">活用促進/Engagement</option>
-            <option value="成果創出">成果創出/Outcome/ROI</option>
-            <option value="拡大">拡大/Expansion</option>
-            <option value="共創">共創/Advocacy</option>
+            <option value="活用支援/オンボーディング">活用支援/オンボーディング</option>
+            <option value="活用支援/サポート">活用支援/サポート</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">フェーズ項目</label>
+          <label class="form-label">活動区分</label>
           <select id="visitTaskItem" class="status-select-cs" onchange="updateVisitTaskDetail()"></select>
         </div>
         <div class="form-group">
           <label class="form-label">対応者</label>
           <input type="text" id="visitAssignee" class="form-input" placeholder="対応者名を入力" autocomplete="off"/>
         </div>
-        <div id="visitTaskDetail" class="visit-task-detail"></div>
-        <div class="form-group">
-          <label class="form-label">達成度 <strong id="visitScoreValue">0</strong></label>
-          <input type="range" id="visitScore" class="visit-score-range" min="0" max="100" value="0" oninput="document.getElementById('visitScoreValue').textContent=this.value"/>
-          <div class="visit-score-scale"><span>0</span><span>100</span></div>
+        <div class="form-group visit-check-item">
+          <label><input type="checkbox" id="visitIsVisit"/> 訪問</label>
         </div>
         <div class="form-group">
           <label class="form-label">訪問日/対応日（開始）</label>
@@ -339,6 +331,6 @@
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
 <script src="cs-card-data.js"></script>
-<script src="cs.js?v=20260915-2"></script>
+<script src="cs.js?v=20260915-3"></script>
 </body>
 </html>
