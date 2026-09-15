@@ -41,6 +41,7 @@ const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","�
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
 let csFilterBranch = "";
 let pendingCsDeleteId = null;
+let supportEndMigrationRunning = false;
 
 // =============================================
 // ユーティリティ
@@ -540,10 +541,39 @@ function initCs() {
       populateCsStaffSelect();
       renderCsBranchTabs();
       renderCsView();
+      migrateExistingSupportEndDates(snapshot.docs);
     }, err => {
       console.error("CS Firestore error:", err);
       showToast("CSデータ取得に失敗しました", "error");
     });
+}
+
+async function migrateExistingSupportEndDates(docs) {
+  if (supportEndMigrationRunning) return;
+  const targets = docs.filter(doc => {
+    const data = doc.data();
+    return data.startDate && data.supportEndAutoMigratedV1 !== true;
+  });
+  if (!targets.length) return;
+  supportEndMigrationRunning = true;
+  try {
+    for (let offset = 0; offset < targets.length; offset += 450) {
+      const batch = db.batch();
+      targets.slice(offset, offset + 450).forEach(doc => {
+        batch.update(doc.ref, {
+          supportEndDate: supportEndSevenYearsAfter(doc.data().startDate),
+          supportEndAutoMigratedV1: true,
+        });
+      });
+      await batch.commit();
+    }
+    showToast(`${targets.length}件のサポートエンドを更新しました`);
+  } catch (error) {
+    console.error("サポートエンド一括更新エラー:", error);
+    showToast("既存案件のサポートエンド更新に失敗しました", "error");
+  } finally {
+    supportEndMigrationRunning = false;
+  }
 }
 
 function populateCsStaffSelect() {
@@ -704,6 +734,7 @@ async function saveCsProject(e) {
     } else {
       data.visits    = [];
       data.createdAt = new Date().toISOString();
+      data.supportEndAutoMigratedV1 = true;
       await db.collection("cs_projects").add(data);
       showToast("CS案件を登録しました");
     }
