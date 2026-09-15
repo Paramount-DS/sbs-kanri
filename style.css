@@ -468,6 +468,8 @@ body {
 .project-card.delay  { border-color: var(--red-bd);    background: var(--red-bg); }
 .project-card.warning { border-color: var(--yellow-bd); background: var(--yellow-bg); }
 .project-card.completed { border-color: #a5d6a7; background: var(--green-bg); opacity: .88; }
+.project-card.lost { border-color:#aeb4bd; background:#e5e7ea; filter:grayscale(1); opacity:.72; }
+.project-card.lost:hover { transform:none; box-shadow:var(--shadow-sm); }
 
 .project-card::before {
   content: '';
@@ -480,6 +482,7 @@ body {
 .project-card.delay::before     { background: var(--red-bd); }
 .project-card.warning::before   { background: var(--yellow-bd); }
 .project-card.completed::before { background: #66bb6a; }
+.project-card.lost::before { background:#747b85; }
 
 /* --- カードヘッダー --- */
 .card-header { display: flex; flex-direction: column; gap: 6px; }
@@ -818,6 +821,12 @@ body {
   border: 1px solid var(--gray-200);
 }
 .btn-edit:hover { background: var(--gray-200); }
+
+.btn-order { background:#e5f5ea; color:#18733e; border:1px solid #9fd0ae; }
+.btn-order:hover { background:#cfebd8; }
+.btn-lost { background:#eceef1; color:#59616c; border:1px solid #c4c9d0; }
+.btn-lost:hover { background:#dfe2e6; }
+.badge-lost { background:#6f7680; color:#fff; }
 
 .btn-delete {
   background: #fde8e8;

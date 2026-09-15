@@ -118,7 +118,7 @@ function isDuplicateHospital(project, projects = allProjects) {
 // カード生成
 // =============================================
 function createCard(project) {
-  const statusClass = checkDelay(project);
+  const statusClass = project.isLost ? "lost" : checkDelay(project);
   const ptypeKey = project.projectType || "new";
   const tasks = getTasksForType(ptypeKey);
   const progress = Math.min(Math.round((project.currentTask/tasks.length)*100),100);
@@ -140,6 +140,7 @@ function createCard(project) {
   if (statusClass==="delay") statusBadge=`<span class="badge badge-delay">遅延</span>`;
   else if (statusClass==="warning") statusBadge=`<span class="badge badge-warning">注意</span>`;
   else if (statusClass==="completed") statusBadge=`<span class="badge badge-completed">完了</span>`;
+  else if (statusClass==="lost") statusBadge=`<span class="badge badge-lost">失注</span>`;
   const typeBadge = `<span class="badge-type" style="background:${ptype.badgeColor};color:${ptype.badgeText};">${ptype.label}</span>`;
   const duplicateBadge = isDuplicateHospital(project) ? `<span class="duplicate-badge">重複</span>` : "";
   const dots = tasks.map((_,i)=>{
@@ -181,9 +182,33 @@ function createCard(project) {
           ?`<button class="btn btn-revert" onclick="revertTask('${project.id}',${project.currentTask})">← 戻る</button>`:""}
         <button class="btn btn-detail" onclick="openDetailModal('${project.id}')">詳細</button>
         <button class="btn btn-edit" onclick="openEditModal('${project.id}')">編集</button>
+        <button class="btn btn-order" onclick="markProjectWon('${project.id}')">受注</button>
+        ${project.isLost
+          ? `<button class="btn btn-lost" disabled>失注済</button>`
+          : `<button class="btn btn-lost" onclick="markProjectLost('${project.id}')">失注</button>`}
         <button class="btn btn-delete" onclick="openDeleteModal('${project.id}')">削除</button>
       </div>
     </div>`;
+}
+
+async function markProjectWon(id) {
+  const project=allProjects.find(item=>item.id===id);
+  if(!project)return;
+  const tasks=getTasksForType(project.projectType||"new");
+  const orderIndex=tasks.findIndex(task=>task.includes("受注"));
+  if(orderIndex<0){showToast("受注ステータスが見つかりません","error");return;}
+  try {
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({currentTask:orderIndex,isLost:false});
+    showToast(`${tasks[orderIndex]}へ更新しました`);
+  } catch(error){console.error(error);showToast("受注への更新に失敗しました","error");}
+}
+
+async function markProjectLost(id) {
+  if(!window.confirm("この案件を失注にしますか？"))return;
+  try {
+    await db.collection(BRANCHES[currentBranch].collection).doc(id).update({isLost:true});
+    showToast("案件を失注に変更しました");
+  } catch(error){console.error(error);showToast("失注への更新に失敗しました","error");}
 }
 
 // =============================================
