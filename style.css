@@ -263,9 +263,13 @@ body {
 .table-row-warning { background: #fffdf0; }
 .table-row-normal { background: var(--white); }
 .table-row-completed { background: var(--green-bg); opacity: .85; }
+.table-row-lost,
+.table-row-postponed { background: #f1f2f4; opacity: .78; }
 .table-row-delay:hover { background: #ffeeed; }
 .table-row-warning:hover { background: #fff9e0; }
 .table-row-completed:hover { background: #d8eed8; }
+.table-row-lost:hover,
+.table-row-postponed:hover { background: #e5e7ea; }
 .badge-normal { background: #e8f0fc; color: var(--blue-dark); }
 .col-status { width: 160px; }
 .col-hospital { width: 180px; }

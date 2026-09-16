@@ -6,7 +6,7 @@
   <title>全ステータス一覧 | 案件管理ツール</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="style.css?v=20260916-6"/>
+  <link rel="stylesheet" href="style.css?v=20260916-8"/>
   <link rel="stylesheet" href="auth.css?v=20260916-5"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -54,6 +54,8 @@
       <option value="warning">🟡 注意</option>
       <option value="normal">🔵 正常</option>
       <option value="completed">✅ 完了</option>
+      <option value="lost">失注</option>
+      <option value="postponed">⏸ 延期</option>
     </select>
     <span class="count-label"><span id="projectCount">0 件</span>表示中</span>
   </div>
@@ -97,6 +99,6 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js?v=20260916-7"></script>
-<script src="list.js"></script>
+<script src="list.js?v=20260916-8"></script>
 </body>
 </html>

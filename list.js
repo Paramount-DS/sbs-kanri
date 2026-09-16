@@ -66,8 +66,16 @@ function statusLabel(status) {
     case "delay":     return {text:"遅延",cls:"badge badge-delay"};
     case "warning":   return {text:"注意",cls:"badge badge-warning"};
     case "completed": return {text:"完了",cls:"badge badge-completed"};
+    case "lost":      return {text:"失注",cls:"badge badge-lost"};
+    case "postponed": return {text:"⏸ 延期",cls:"badge badge-postponed"};
     default:          return {text:"正常",cls:"badge badge-normal"};
   }
+}
+
+function getProjectStatus(project) {
+  if (project.isLost) return "lost";
+  if (project.isPostponed) return "postponed";
+  return checkDelay(project);
 }
 
 function renderTable() {
@@ -76,21 +84,25 @@ function renderTable() {
     const q = searchQuery.toLowerCase();
     const matchName = p.hospitalName?.toLowerCase().includes(q)??false;
     const matchPerson = !filterPerson||p.mainPerson===filterPerson||p.subPerson===filterPerson;
-    const status = checkDelay(p);
+    const status = getProjectStatus(p);
     const normStatus = status===""?"normal":status;
     const matchStatus = !filterStatus||normStatus===filterStatus;
     return matchName&&matchPerson&&matchStatus;
   });
-  const priority = {delay:0,warning:1,"":2,completed:3};
+  const priority = {delay:0,warning:1,"":2,completed:3,lost:4,postponed:4};
   filtered.sort((a,b)=>{
-    const pa=priority[checkDelay(a)],pb=priority[checkDelay(b)];
+    const statusA=getProjectStatus(a),statusB=getProjectStatus(b);
+    const inactiveA=statusA==="lost"||statusA==="postponed";
+    const inactiveB=statusB==="lost"||statusB==="postponed";
+    if (inactiveA!==inactiveB) return inactiveA?1:-1;
+    const pa=priority[statusA],pb=priority[statusB];
     if (pa!==pb) return pa-pb;
     return new Date(a.goLiveDate)-new Date(b.goLiveDate);
   });
   document.getElementById("projectCount").textContent=`${filtered.length} 件`;
   if (filtered.length===0) { tbody.innerHTML=`<tr><td colspan="8" class="loading-cell">該当する案件がありません</td></tr>`; return; }
   tbody.innerHTML = filtered.map(p=>{
-    const status = checkDelay(p);
+    const status = getProjectStatus(p);
     const {text,cls} = statusLabel(status);
     const ptasks = getTasksForType(p.projectType);
     const isCompleted = p.currentTask>=ptasks.length;
