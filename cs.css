@@ -72,7 +72,7 @@
 }
 .cs-app-header .header-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items: center; height: 58px; gap:16px; }
 .cs-app-header .header-title { display: flex; align-items: center; gap: 10px; }
-.cs-app-header .header-logo { height: 38px; width: 38px; object-fit:cover; filter:none; border-radius:8px; background:#fff; }
+.cs-app-header .header-logo { height: 38px; width: 38px; object-fit:contain; filter:none; border-radius:8px; background:transparent; }
 .cs-branch-tag { background: rgba(255,255,255,.2); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; letter-spacing: .04em; }
 .cs-app-header .header-main-nav { justify-self:center; }
 .cs-header-actions { display: flex; gap: 8px; align-items: center; justify-self:end; }
