@@ -39,8 +39,11 @@ let csFilterPerson = "";
 let csFilterStatus = "";
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
+const CS_PREFECTURES = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
 let csFilterBranch = "";
 let csDateSort = "desc";
+let csFilterPrefecture = "";
+let csFilterSales = "";
 let pendingCsDeleteId = null;
 let supportEndMigrationRunning = false;
 
@@ -131,6 +134,8 @@ function getProductLabels(p, longLabel = false) {
   if (p.hasEhr)     products.push("EHR連携");
   if (p.hasNurse)   products.push("NC情報連携");
   if (p.hasNcNotify) products.push("NC通知連携");
+  if (p.hasCamera) products.push("カメラ");
+  if (p.hasMobile) products.push("モバイル");
   return products;
 }
 
@@ -292,6 +297,7 @@ function createCsCard(p) {
           <div class="cs-card-current-phase"><span>現在フェーズ</span><strong>${escapeHtml(getVisitStatusLabel(getProjectActivityPhase(p)))}</strong></div>
           <div class="cs-card-sub">
             ${p.branch ? `<span class="cs-meta-tag cs-meta-branch">${escapeHtml(p.branch)}支店</span>` : ""}
+            ${p.prefecture ? `<span class="cs-meta-tag">${escapeHtml(p.prefecture)}</span>` : ""}
             <span class="cs-meta-tag cs-meta-date">稼働 ${startFmt}</span>
             ${p.csPerson ? `<span class="cs-meta-tag cs-meta-person">支援担当 ${escapeHtml(p.csPerson)}</span>` : ""}
           </div>
@@ -329,11 +335,14 @@ function renderCsProjects() {
   if (!container || !emptyState) return;
 
   let filtered = allCsProjects.filter(p => {
-    const matchName   = (p.hospitalName || "").toLowerCase().includes(csSearchQuery.toLowerCase());
+    const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
+    const matchName   = searchable.includes(csSearchQuery.toLowerCase());
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
     const matchStatus = !csFilterStatus || normalizeVisitStatus(getLatestVisit(p)?.status) === csFilterStatus;
     const matchBranch = !csFilterBranch || p.branch === csFilterBranch;
-    return matchName && matchPerson && matchStatus && matchBranch;
+    const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
+    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
+    return matchName && matchPerson && matchStatus && matchBranch && matchPrefecture && matchSales;
   });
 
   filtered.sort((a,b)=>(a.hospitalName||"").localeCompare(b.hospitalName||"","ja"));
@@ -357,6 +366,8 @@ function createCsListRow(p) {
   return `<tr>
     <td class="cs-list-hospital" data-label="病院名"><a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(p.hospitalName || "")}</a></td>
     <td data-label="支援担当">${escapeHtml(p.csPerson || "—")}</td>
+    <td data-label="担当営業">${escapeHtml(p.salesPerson || "—")}</td>
+    <td data-label="都道府県">${escapeHtml(p.prefecture || "—")}</td>
     <td data-label="現在フェーズ"><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
     <td data-label="最終対応日"><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
     <td class="cs-list-memo" data-label="メモ"><div class="cs-list-memo-preview">${escapeHtml(memo || "—")}</div></td>
@@ -369,12 +380,14 @@ function renderCsList() {
 
   let filtered = allCsProjects.filter(p => {
     const q = csSearchQuery.toLowerCase();
-    const name = (p.hospitalName || "").toLowerCase();
-    const matchName = name.includes(q);
+    const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
+    const matchName = searchable.includes(q);
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
     const latestStatus = normalizeVisitStatus(getLatestVisit(p)?.status);
     const matchStatus = !csFilterStatus || latestStatus === csFilterStatus;
-    return matchName && matchPerson && matchStatus;
+    const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
+    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
+    return matchName && matchPerson && matchStatus && matchPrefecture && matchSales;
   });
 
   filtered.sort((a, b) => {
@@ -389,7 +402,7 @@ function renderCsList() {
   document.getElementById("csProjectCount").textContent = `${filtered.length} 件`;
   tbody.innerHTML = filtered.length
     ? filtered.map(createCsListRow).join("")
-    : `<tr><td colspan="5" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+    : `<tr><td colspan="7" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
   updateCsStats();
 }
 
@@ -475,6 +488,8 @@ function initCs() {
   renderCsBranchTabs();
   const branchSelect = document.getElementById("csBranch");
   if (branchSelect) branchSelect.innerHTML = `<option value="">-- 選択 --</option>` + CS_BRANCHES.map(branch => `<option value="${branch}">${branch}</option>`).join("");
+  const prefectureInput = document.getElementById("csPrefecture");
+  if (prefectureInput) prefectureInput.innerHTML = `<option value="">-- 選択 --</option>` + CS_PREFECTURES.map(value=>`<option value="${value}">${value}</option>`).join("");
   const startDateInput = document.getElementById("csStartDate");
   if (startDateInput) startDateInput.addEventListener("change", () => {
     document.getElementById("csSupportEndDate").value = supportEndSevenYearsAfter(startDateInput.value);
@@ -511,6 +526,13 @@ function initCs() {
     csDateSort = e.target.value;
     renderCsList();
   });
+  const prefectureFilter=document.getElementById("csPrefectureFilter");
+  if(prefectureFilter){
+    prefectureFilter.innerHTML=`<option value="">全都道府県</option>`+CS_PREFECTURES.map(value=>`<option value="${value}">${value}</option>`).join("");
+    prefectureFilter.addEventListener("change",e=>{csFilterPrefecture=e.target.value;renderCsView();});
+  }
+  const salesFilter=document.getElementById("csSalesFilter");
+  if(salesFilter)salesFilter.addEventListener("change",e=>{csFilterSales=e.target.value;renderCsView();});
   // 登録フォームの担当者プルダウン
   if (document.getElementById("csSalesPerson")) populateCsStaffSelect();
 
@@ -548,6 +570,7 @@ function initCs() {
     .onSnapshot(snapshot => {
       allCsProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateCsStaffFilter();
+      updateCsSalesFilter();
       populateCsStaffSelect();
       renderCsBranchTabs();
       renderCsView();
@@ -556,6 +579,15 @@ function initCs() {
       console.error("CS Firestore error:", err);
       showToast("CSデータ取得に失敗しました", "error");
     });
+}
+
+function updateCsSalesFilter() {
+  const select=document.getElementById("csSalesFilter");
+  if(!select)return;
+  const current=select.value;
+  const values=[...new Set(allCsProjects.map(p=>String(p.salesPerson||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  select.innerHTML=`<option value="">全担当営業</option>`+values.map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+  if(current&&values.includes(current))select.value=current;else csFilterSales="";
 }
 
 async function migrateExistingSupportEndDates(docs) {
@@ -644,6 +676,7 @@ function openCsEditModal(id) {
   document.getElementById("csBranch").value       = p.branch || "";
   document.getElementById("csHospitalName").value = hospitalDisplay.hospitalName;
   document.getElementById("csQuickMemo").value     = hospitalDisplay.quickMemo;
+  document.getElementById("csPrefecture").value   = p.prefecture || "";
   document.getElementById("csWard").value         = p.ward || "";
   document.getElementById("csStartDate").value    = p.startDate || "";
   document.getElementById("csSupportEndDate").value = p.supportEndDate || "";
@@ -656,7 +689,7 @@ function openCsEditModal(id) {
   document.getElementById("csMemo").value         = p.memo || "";
   document.getElementById("csProjectType").value = p.projectType || "new";
   document.getElementById("csNewOrExisting").value = p.newOrExisting || "";
-  ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou"].forEach(suffix => {
+  ["KeieiShukai","KyokaBedNum","ByokoKosei","DonyuBedNum","BedsideTerminal","StationTerminal","NemiriScan","RishoCatch","WifiNav","CameraCount","MobileCount","TabletPos","ElectronicKarte","NurseCall","ShuhenRenkei","AnkenGaiyou"].forEach(suffix => {
     const key = suffix.charAt(0).toLowerCase() + suffix.slice(1);
     document.getElementById(`cs${suffix}`).value = p[key] || "";
   });
@@ -668,6 +701,8 @@ function openCsEditModal(id) {
   document.getElementById("csHasEhr").checked     = !!p.hasEhr;
   document.getElementById("csHasNurse").checked   = !!p.hasNurse;
   document.getElementById("csHasNcNotify").checked = !!p.hasNcNotify;
+  document.getElementById("csHasCamera").checked = !!p.hasCamera;
+  document.getElementById("csHasMobile").checked = !!p.hasMobile;
   populateCsStaffSelect();
   document.getElementById("csSalesPerson").value  = p.salesPerson || "";
   document.getElementById("csPerson").value       = p.csPerson || "";
@@ -698,6 +733,7 @@ async function saveCsProject(e) {
     branch:        document.getElementById("csBranch").value,
     hospitalName:  hospitalInput.hospitalName,
     quickMemo:     hospitalInput.quickMemo,
+    prefecture:    document.getElementById("csPrefecture").value,
     ward:          document.getElementById("csWard").value.trim(),
     startDate:     document.getElementById("csStartDate").value,
     supportEndDate:document.getElementById("csSupportEndDate").value || supportEndSevenYearsAfter(document.getElementById("csStartDate").value),
@@ -718,6 +754,8 @@ async function saveCsProject(e) {
     hasEhr:        document.getElementById("csHasEhr").checked,
     hasNurse:      document.getElementById("csHasNurse").checked,
     hasNcNotify:   document.getElementById("csHasNcNotify").checked,
+    hasCamera:     document.getElementById("csHasCamera").checked,
+    hasMobile:     document.getElementById("csHasMobile").checked,
     projectType:   document.getElementById("csProjectType").value,
     newOrExisting: document.getElementById("csNewOrExisting").value.trim(),
     keieiShukai:    document.getElementById("csKeieiShukai").value.trim(),
@@ -729,6 +767,8 @@ async function saveCsProject(e) {
     nemiriScan:     document.getElementById("csNemiriScan").value.trim(),
     rishoCatch:     document.getElementById("csRishoCatch").value.trim(),
     wifiNav:        document.getElementById("csWifiNav").value.trim(),
+    cameraCount:    document.getElementById("csCameraCount").value.trim(),
+    mobileCount:    document.getElementById("csMobileCount").value.trim(),
     tabletPos:      document.getElementById("csTabletPos").value.trim(),
     electronicKarte:document.getElementById("csElectronicKarte").value.trim(),
     nurseCall:      document.getElementById("csNurseCall").value.trim(),
@@ -1041,6 +1081,7 @@ function parseCsTableText(text) {
     return {
       type: "cs",
       hospitalName,
+      prefecture: getTableValue(row, indexes, ["都道府県"]),
       ward: getTableValue(row, indexes, ["導入病棟"]),
       startDate: getTableValue(row, indexes, ["稼働開始日"]),
       supportEndDate: getTableValue(row, indexes, ["稼働終了日"]),
@@ -1057,6 +1098,10 @@ function parseCsTableText(text) {
       hasEhr: isCheckedCell(getTableValue(row, indexes, ["EHR連携"])),
       hasNurse: isCheckedCell(getTableValue(row, indexes, ["NC情報連携"])),
       hasNcNotify: isCheckedCell(getTableValue(row, indexes, ["NC通知連携"])),
+      hasCamera: isCheckedCell(getTableValue(row, indexes, ["カメラ"])),
+      hasMobile: isCheckedCell(getTableValue(row, indexes, ["モバイル"])),
+      cameraCount: getTableValue(row, indexes, ["カメラ数量", "カメラ（数量）"]),
+      mobileCount: getTableValue(row, indexes, ["モバイル数量", "モバイル（数量）"]),
       moveOp: getTableValue(row, indexes, ["病床移動時の運用"]),
       bedNumStaff: getTableValue(row, indexes, ["病床番号変更担当"]),
       bedMoveStaff: getTableValue(row, indexes, ["床頭台移動担当"]),
@@ -1072,6 +1117,7 @@ function normalizeCsImportItems(json) {
   rows.map(item => ({
     type:            "cs",
     hospitalName:    String(item.hospitalName || "").trim(),
+    prefecture:      String(item.prefecture || "").trim(),
     ward:            String(item.ward         || "").trim(),
     startDate:       String(item.startDate    || "").trim(),
     supportEndDate:  String(item.supportEndDate || "").trim(),
@@ -1088,6 +1134,10 @@ function normalizeCsImportItems(json) {
     hasEhr:          Boolean(item.hasEhr),
     hasNurse:        Boolean(item.hasNurse),
     hasNcNotify:     Boolean(item.hasNcNotify),
+    hasCamera:       Boolean(item.hasCamera),
+    hasMobile:       Boolean(item.hasMobile),
+    cameraCount:     String(item.cameraCount || "").trim(),
+    mobileCount:     String(item.mobileCount || "").trim(),
     moveOp:          String(item.moveOp       || "").trim(),
     bedNumStaff:     String(item.bedNumStaff  || "").trim(),
     bedMoveStaff:    String(item.bedMoveStaff || "").trim(),

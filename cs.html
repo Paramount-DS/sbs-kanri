@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260901-2"/>
   <link rel="stylesheet" href="auth.css"/>
-  <link rel="stylesheet" href="cs.css?v=20260916-3"/>
+  <link rel="stylesheet" href="cs.css?v=20260916-4"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -43,9 +43,11 @@
   <div class="cs-search-inner">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" id="csSearchInput" class="search-input" placeholder="病院名で検索..."/>
+      <input type="text" id="csSearchInput" class="search-input" placeholder="病院名・都道府県・担当営業で検索..."/>
     </div>
     <select id="csStaffFilter" class="filter-select"><option value="">全員表示</option></select>
+    <select id="csSalesFilter" class="filter-select"><option value="">全担当営業</option></select>
+    <select id="csPrefectureFilter" class="filter-select"><option value="">全都道府県</option></select>
     <select id="csStatusFilter" class="filter-select"><option value="">全CSステータス</option></select>
     <button type="button" class="btn-cs-export" onclick="exportCsActivitiesXlsx()">活動内容Excel出力</button>
     <div class="cs-export-period"><span>出力期間</span><input type="date" id="csExportFrom" aria-label="出力期間の開始日"/><b>〜</b><input type="date" id="csExportTo" aria-label="出力期間の終了日"/></div>
@@ -86,6 +88,10 @@
         <div class="form-group">
           <label class="form-label">簡易メモ</label>
           <input type="text" id="csQuickMemo" class="form-input" placeholder="例：10枚"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">都道府県</label>
+          <select id="csPrefecture" class="form-select"></select>
         </div>
         <div class="form-group">
           <label class="form-label">導入病棟名</label>
@@ -150,6 +156,8 @@
         <div class="form-group"><label class="form-label">眠りSCAN（既存/新規台数）</label><input id="csNemiriScan" class="form-input" placeholder="例：既存0台／新規400台"/></div>
         <div class="form-group"><label class="form-label">離床CATCH（既存/新規台数）</label><input id="csRishoCatch" class="form-input" placeholder="例：既存30台／新規50台"/></div>
         <div class="form-group"><label class="form-label">Wi-Fiベッドナビ（既存/新規台数）</label><input id="csWifiNav" class="form-input" placeholder="例：既存30台／新規50台"/></div>
+        <div class="form-group"><label class="form-label">カメラ（数量）</label><input id="csCameraCount" class="form-input" placeholder="例：10台"/></div>
+        <div class="form-group"><label class="form-label">モバイル（数量）</label><input id="csMobileCount" class="form-input" placeholder="例：20台"/></div>
         <div class="form-group"><label class="form-label">タブレット設置位置</label><input id="csTabletPos" class="form-input" placeholder="例：床頭台前面"/></div>
 
         <div class="cs-section-title">システム連携</div>
@@ -171,6 +179,8 @@
             <label class="toggle-item"><input type="checkbox" id="csHasEhr"/> EHR連携</label>
             <label class="toggle-item"><input type="checkbox" id="csHasNurse"/> NC情報連携</label>
             <label class="toggle-item"><input type="checkbox" id="csHasNcNotify"/> NC通知連携</label>
+            <label class="toggle-item"><input type="checkbox" id="csHasCamera"/> カメラ</label>
+            <label class="toggle-item"><input type="checkbox" id="csHasMobile"/> モバイル</label>
           </div>
         </div>
 
@@ -350,6 +360,6 @@
 <script src="firebase-config.js"></script>
 <script src="auth.js"></script>
 <script src="cs-card-data.js"></script>
-<script src="cs.js?v=20260916-2"></script>
+<script src="cs.js?v=20260916-4"></script>
 </body>
 </html>
