@@ -89,11 +89,12 @@ body {
 }
 
 .header-logo {
-  height: 26px;
+  height: 38px;
   width: auto;
   display: block;
   flex-shrink: 0;
-  background: transparent;
+  background: #fff;
+  border-radius: 8px;
 }
 
 .header-page-title {

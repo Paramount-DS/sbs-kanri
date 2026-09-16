@@ -34,7 +34,7 @@ function showAuthGate() {
   overlay.id = "authGateOverlay";
   overlay.innerHTML = `
     <div class="auth-gate-box">
-      <img src="logo.png" alt="Parasight" class="auth-gate-logo" />
+      <img src="ParasiteLogo.png" alt="Parasight" class="auth-gate-logo" />
       <p class="auth-gate-desc">パスワードを入力してください</p>
       <input type="password" id="authGateInput" class="auth-gate-input" placeholder="パスワード" autocomplete="off" />
       <div id="authGateError" class="auth-gate-error"></div>
