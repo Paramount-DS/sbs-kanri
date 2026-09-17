@@ -330,3 +330,22 @@ body { background: #fff; color: var(--dash-text); }
   .dashboard-category-grid { grid-template-columns: 1fr; }
   .panel-basic, .panel-onboarding, .panel-support, .panel-visits { grid-column: 1; grid-row: auto; }
 }
+
+/* 詳細画面の補足と各項目を読みやすい大きさにする（数値・フェーズの強調文字は維持） */
+.dashboard-summary-item span { font-size: 14px; line-height: 1.35; }
+.dashboard-summary-item em { font-size: 13px; line-height: 1.35; }
+.dashboard-card-head h2 { font-size: 17px; }
+.dashboard-card-head p { font-size: 11px; }
+.dashboard-data-list > div { padding: 8px 4px; gap: 8px; }
+.dashboard-data-list dt { font-size: 12px; line-height: 1.5; }
+.dashboard-data-list dd { font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+.dashboard-visit-summary span { font-size: 12px; }
+.dashboard-history-table { min-width: 700px; }
+.dashboard-history-head { font-size: 12px; }
+.dashboard-history-row,
+.dashboard-history-row time,
+.dashboard-history-row strong,
+.dashboard-history-row span,
+.dashboard-history-row p { font-size: 12px; line-height: 1.5; }
+.dashboard-history-row time em { font-size: 10px; }
+.dashboard-empty { font-size: 13px; }
