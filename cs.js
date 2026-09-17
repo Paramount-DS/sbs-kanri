@@ -543,13 +543,12 @@ function initCs() {
   if (visitForm) visitForm.addEventListener("submit", saveVisit);
 
   // モーダル外クリックで閉じる
-  ["csModal","visitModal","csDetailModal","csDeleteModal"].forEach(id => {
+  ["visitModal","csDetailModal","csDeleteModal"].forEach(id => {
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.addEventListener("click", e => {
       if (e.target.id === id) {
-        if      (id === "csModal")       closeCsModal();
-        else if (id === "visitModal")    closeVisitModal();
+        if      (id === "visitModal")    closeVisitModal();
         else if (id === "csDetailModal") closeCsDetailModal();
         else                             closeCsDeleteModal();
       }

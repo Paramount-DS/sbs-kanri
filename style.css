@@ -946,6 +946,32 @@ body {
   justify-content: flex-end;
 }
 
+/* 登録・編集画面は入力欄だけをスクロールし、操作ボタンを下部に固定する */
+#projectModal .modal-box,
+#csModal .modal-box {
+  overflow: hidden;
+}
+#projectModal form,
+#csModal form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+#projectModal form > .modal-body,
+#csModal form > .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#projectModal form > .modal-footer,
+#csModal form > .modal-footer {
+  flex: none;
+  background: var(--white);
+  z-index: 1;
+}
+
 .btn-primary {
   background: var(--blue);
   color: var(--white);

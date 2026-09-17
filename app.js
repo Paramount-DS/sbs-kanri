@@ -695,11 +695,10 @@ document.addEventListener("DOMContentLoaded",()=>{
     switchBranch(e.target.value);
   });
   document.getElementById("projectForm").addEventListener("submit",saveProject);
-  ["projectModal","deleteModal","detailModal","importModal"].forEach(id=>{
+  ["deleteModal","detailModal","importModal"].forEach(id=>{
     document.getElementById(id).addEventListener("click",e=>{
       if (e.target.id===id) {
-        if (id==="projectModal") closeModal();
-        else if (id==="deleteModal") closeDeleteModal();
+        if (id==="deleteModal") closeDeleteModal();
         else if (id==="detailModal") closeDetailModal();
         else if (id==="importModal") closeImportModal();
       }
