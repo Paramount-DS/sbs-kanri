@@ -53,8 +53,7 @@
 .dashboard-page { max-width: 1440px; margin: 0 auto; padding: 18px; background: #f5f6f8; min-height: calc(100vh - 56px); }
 .dashboard-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dashboard-summary .dashboard-missing { grid-column: 1 / -1; padding: 8px 10px; border: 1px solid #f1d48a; background: #fff9e8; color: #805d11; border-radius: 5px; font-size: 10px; }
-.dashboard-phase-panel, .dashboard-category-card { background: white; border: 1px solid #e1e4e9; border-radius: 7px; padding: 14px; }
-.dashboard-phase-panel { margin-bottom: 12px; }
+.dashboard-category-card { background: white; border: 1px solid #e1e4e9; border-radius: 7px; padding: 14px; }
 .dashboard-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .dashboard-card-head h2 { margin: 0; color: #202634; font-size: 14px; }
 .dashboard-card-head p { margin: 2px 0 0; color: #8a93a3; font-size: 9px; }
@@ -151,8 +150,6 @@ body { background: #fff; color: var(--dash-text); }
 .dashboard-summary-item.summary-phase { align-items: flex-start; text-align: left; padding-left: 22px; }
 .dashboard-summary-item.summary-phase strong { font-size: clamp(16px, 1.25vw, 24px); font-weight: 700; }
 .dashboard-summary .dashboard-missing { grid-column: 1 / -1; padding: 5px 10px; border: 1px solid #e7b6c9; border-radius: 4px; background: var(--dash-pink-soft); color: #8d385b; font-size: 10px; }
-.dashboard-phase-panel { display: none; }
-.dashboard-phase-panel > button { flex: none; border: 1px solid var(--dash-pink-dark); border-radius: 4px; padding: 5px 10px; background: #fff; color: var(--dash-pink-dark); font-size: 10px; font-weight: 700; cursor: pointer; }
 .dashboard-phase-flow { flex: 1; display: grid; grid-template-columns: repeat(13, auto); justify-content: center; gap: 5px; overflow-x: auto; }
 .dashboard-phase-flow b { color: #b7a3aa; }
 .dashboard-phase-step { min-width: 104px; padding: 4px 7px; border: 0; border-radius: 3px; background: transparent; }
@@ -264,7 +261,6 @@ body { background: #fff; color: var(--dash-text); }
   .dashboard-category-card { grid-column: span 1; grid-row: auto; }
   .panel-trend, .panel-visits { grid-column: span 2; }
   .panel-work-reduction { grid-column: span 1; }
-  .dashboard-phase-panel { align-items: stretch; flex-direction: column; }
   .dashboard-phase-flow { justify-content: start; }
 }
 @media (max-width: 650px) {

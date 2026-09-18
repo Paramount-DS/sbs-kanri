@@ -148,7 +148,6 @@ function riskClass(value, caution, risk, reverse=false) {
   return value<risk?"is-risk":value<caution?"is-caution":"is-good";
 }
 function badge(label, cls="") { return `<span class="dashboard-risk-badge ${cls}">${label}</span>`; }
-function displaySelect(value, options) { return options.find(row=>row[0]===value)?.[1] || "-"; }
 function rowsHtml(rows) { return `<dl class="dashboard-data-list">${rows.map(([k,v])=>`<div><dt>${escapeHtml(String(k))}</dt><dd>${escapeHtml(String(v))}</dd></div>`).join("")}</dl>`; }
 
 function basicRows(p) {
@@ -161,27 +160,6 @@ function basicRows(p) {
     ["ベッドサイド端末",shown(p.bedsideTerminal)],["ステーション端末",shown(p.stationTerminal)],["眠りSCAN",shown(p.nemiriScan)],["離床CATCH",shown(p.rishoCatch)],["Wi-Fiベッドナビ",shown(p.wifiNav)],["カメラ",shown(p.cameraCount)],["モバイル",shown(p.mobileCount)],["タブレット設置位置",shown(p.tabletPos)],
     ["電子カルテ",shown(p.electronicKarte)],["ナースコール",shown(p.nurseCall)],["周辺連携機能",shown(p.shuhenRenkei)],["案件概要",shown(p.ankenGaiyou)],["簡易メモ",shown(p.quickMemo)]];
 }
-function categoryRows(category,p,c) {
-  const d=getDashboardData(p), x=d[category];
-  if(category==="csActivity") return [["最終訪問日",shown(c.newestVisit)],["経過日数",shown(c.visitElapsed,"日")],["訪問回数",shown((p.visits||[]).filter(isVisitRecord).length||x.visitCount||0)],
-    ["定例会回数",shown(x.regularMeetingCount)],["問い合わせ件数",shown(x.inquiryCount)],["未解決課題数",shown(x.unresolvedIssues)],
-    ["教育実施回数",shown(x.trainingCount)],["最終対応日",shown(c.newestContact)],["次回対応予定日",shown(c.nextContact)]];
-  if(category==="usage") return [["システム利用率",percent(c.systemUsage)],["アクティブ率",percent(c.activeRate)],["機能活用率",percent(c.featureRate)],
-    ["端末接続率",percent(c.connectionRate)],["対象ユーザー数",shown(x.targetUsers)],["アクティブユーザー数",shown(x.activeUsers)],["ログイン回数",shown(x.loginCount)],
-    ["利用日数",shown(operatingDays(p.startDate),"日")],["アラート件数",shown(x.alertCount)],["データ閲覧回数",shown(x.dataViews)],["ダッシュボード閲覧回数",shown(x.dashboardViews)]];
-  if(category==="kpi") return [["KPI種別",shown(x.type)],["KPI目標値",shown(x.target)],["KPI現在値",shown(x.current)],["KPI達成率",percent(c.kpiRate)],
-    ["巡視削減率",shown(x.patrolReduction,"%")],["夜間訪室削減率",shown(x.nightVisitReduction,"%")],["業務削減時間",shown(x.workHoursReduction,"時間")],
-    ["アラート対応率",shown(x.alertResponseRate,"%")],["睡眠データ活用率",shown(x.sleepDataUsageRate,"%")]];
-  if(category==="roi") return [["契約金額",shown(x.contractAmount,"円")],["月間削減時間",shown(c.effectiveMonthlyHours===null?"":c.effectiveMonthlyHours.toFixed(1),"時間")],["算出元",c.monthlyHoursSource],["人件費単価",shown(x.hourlyLaborCost,"円")],
-    ["月間削減額",shown(c.monthlySaved===null?"":Math.round(c.monthlySaved),"円")],["年間削減額",shown(c.annualSaved===null?"":Math.round(c.annualSaved),"円")],
-    ["ROI",percent(c.roiRate)],["投資回収月数",shown(c.payback===null?"":c.payback.toFixed(1),"か月")]];
-  if(category==="renewal") return [["契約更新日",shown(x.renewalDate)],["更新までの残日数",shown(c.renewalDays,"日")],["更新確度",shown(x.probability)],
-    ["追加提案有無",displaySelect(x.hasAdditionalProposal,YES_NO)],["提案中案件数",shown(x.proposalCount)],["他病棟展開有無",displaySelect(x.otherWardExpansion,YES_NO)],
-    ["他施設展開有無",displaySelect(x.otherFacilityExpansion,YES_NO)],["上位プラン提案有無",displaySelect(x.upperPlanProposal,YES_NO)],["追加ライセンス提案有無",displaySelect(x.additionalLicenseProposal,YES_NO)]];
-  if(category==="advocacy") return DASHBOARD_FIELDS.advocacy.map(([key,label,,options])=>[label,displaySelect(x[key],options)]);
-  return [];
-}
-
 function categoryRisk(category,c) {
   if(category==="basic") return badge("登録情報","is-empty");
   if(category==="csActivity") return c.visitElapsed===null?badge("-","is-empty"):c.visitElapsed>=60?badge("未訪問リスク","is-risk"):c.visitElapsed>=30?badge("要フォロー","is-caution"):c.unresolved>=3?badge("課題注意","is-caution"):badge("良好","is-good");
@@ -209,9 +187,6 @@ function renderSummary(p,c) {
   ];
   document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>`<div class="dashboard-summary-item ${cls} ${size}"><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`).join("");
 }
-function renderPhasePanel(p) {
-  document.getElementById("dashboardPhasePanel").innerHTML="";
-}
 function renderVisitsCard(p) {
   const visits=(p.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
   return `<div class="dashboard-visit-summary"><strong>${visits.length}</strong><span>累計対応回数</span></div>${visits.length?`<div class="dashboard-history-table"><div class="dashboard-history-head"><span>訪問日</span><span>フェーズ</span><span>活動区分</span><span>対応者</span><span>訪問内容</span></div>${visits.map(({visit})=>`<div class="dashboard-history-row"><time>${escapeHtml(visit.endDate||visit.startDate||"-")}${isVisitRecord(visit)?'<em>訪問</em>':''}</time><strong>${escapeHtml(getVisitStatusLabel(visit.status))}</strong><span>${escapeHtml(normalizeCsActivityItem(visit.taskItem)||"-")}</span><span>${escapeHtml(visit.assignee||"-")}</span><p>${escapeHtml(visit.freeText||"-")}</p></div>`).join("")}</div>`:'<p class="dashboard-empty">訪問記録がありません</p>'}`;
@@ -237,23 +212,6 @@ function renderActivityPanel(p,c,type) {
 function dashboardPanel(category,title,subtitle,body,c) {
   return `<article class="dashboard-category-card panel-${category}"><div class="dashboard-card-head"><div><h2>${title}</h2><p>${subtitle}</p></div><div>${categoryRisk(category,c)}<button onclick="openDashboardModal('${category}')">Input</button></div></div>${body}</article>`;
 }
-function workReductionValue(value){return value===null?"未算出":Number(value).toFixed(1);}
-function renderWorkReductionPanel(c){const s=c.workSummary,w=c.workReduction;return `<article class="dashboard-category-card panel-work-reduction"><div class="dashboard-card-head"><div><h2>業務平均削減時間 / 日</h2><p>SBS / Connect 業務削減効果</p></div><button onclick="openDashboardModal('workReduction')">Input</button></div><div class="work-reduction-hero"><span>選択システム</span><strong>${escapeHtml(w.systemType||"未選択")}</strong><b>${s.minutesPerDay===null?"未算出":`${s.minutesPerDay.toFixed(1)} 分`}</b></div><dl class="work-reduction-summary"><div><dt>1日（時間）</dt><dd>${s.hoursPerDay===null?"未算出":`${s.hoursPerDay.toFixed(1)} 時間`}</dd></div><div><dt>月間削減時間</dt><dd>${s.hoursPerMonth===null?"未算出":`${s.hoursPerMonth.toFixed(1)} 時間`}</dd></div><div><dt>年間削減時間</dt><dd>${s.hoursPerYear===null?"未算出":`${s.hoursPerYear.toFixed(1)} 時間`}</dd></div></dl></article>`;}
-function renderRolePanel(p,c) {
-  const data=getDashboardData(p).usage;
-  const palette=["#e87878","#74a9e8","#f1d568","#efa049","#a36cda","#55b8a6","#dc77b2","#7d8dd6"];
-  const roles=(Array.isArray(data.roles)?data.roles:[]).filter(role=>role?.name).map((role,index)=>({name:role.name,count:Math.max(0,numberValue(role.count)||0),color:palette[index%palette.length]}));
-  const total=roles.reduce((sum,role)=>sum+role.count,0);
-  let cursor=0;
-  const segments=roles.map(role=>{const start=cursor;cursor+=total?role.count/total*100:0;return `${role.color} ${start}% ${cursor}%`;});
-  const donutBackground=total?`conic-gradient(${segments.join(",")})`:"#ececef";
-  return `<article class="dashboard-category-card panel-role"><div class="dashboard-card-head"><div><h2>利用者役職比率</h2></div><button onclick="openDashboardModal('usage')">Input</button></div><div class="dashboard-donut-wrap"><div class="dashboard-donut" style="background:${donutBackground}"><div><span>総利用者数</span><strong>${total||"-"}</strong></div></div><div class="dashboard-donut-legend">${roles.map(role=>`<p><i style="background:${role.color}"></i>${escapeHtml(role.name)}<strong>${role.count}</strong></p>`).join("")||'<p>-</p>'}</div></div></article>`;
-}
-function renderUsagePanel(p,c) {
-  const data=getDashboardData(p).usage;
-  const rows=[["システム利用率",c.systemUsage],["アクティブ率",c.activeRate],["機能活用率",c.featureRate],["端末接続率",c.connectionRate],["ログイン回数",numberValue(data.loginCount)],["利用日数",operatingDays(p.startDate)],["データ閲覧数",numberValue(data.dataViews)]];
-  return `<article class="dashboard-category-card panel-usage"><div class="dashboard-card-head"><div><h2>利用状況</h2><p>システム活用状況</p></div><div>${categoryRisk("usage",c)}<button onclick="openDashboardModal('usage')">Input</button></div></div><div class="dashboard-usage-bars">${rows.map(([label,value],index)=>{const normalized=index<4?Math.max(0,Math.min(100,value||0)):Math.min(100,(value||0));return `<div><span>${label}</span><b><i style="width:${normalized}%"></i></b><strong>${index<4?percent(value):shown(value)}</strong></div>`;}).join("")}</div></article>`;
-}
 function renderCategories(p,c) {
   document.getElementById("dashboardCategoryGrid").innerHTML=[
     dashboardPanel("basic","基本情報","既存案件情報",rowsHtml(basicRows(p)),c),
@@ -262,7 +220,7 @@ function renderCategories(p,c) {
     `<article class="dashboard-category-card panel-visits"><div class="dashboard-card-head"><div><h2>訪問履歴</h2><p>最新情報を表示</p></div><button onclick="openDashboardModal('visits')">Input</button></div>${renderVisitsCard(p)}</article>`
   ].join("");
 }
-function renderDashboard(p) { const c=dashboardCalculations(p); document.getElementById("dashboardHospitalName").textContent=p.hospitalName||"CSダッシュボード"; renderSummary(p,c); renderPhasePanel(p); renderCategories(p,c); }
+function renderDashboard(p) { const c=dashboardCalculations(p); document.getElementById("dashboardHospitalName").textContent=p.hospitalName||"CSダッシュボード"; renderSummary(p,c); renderCategories(p,c); }
 
 function inputHtml(field,value) {
   const [key,label,type,options]=field, safe=escapeHtml(String(value??""));

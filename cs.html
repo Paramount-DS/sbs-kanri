@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260917-1"/>
   <link rel="stylesheet" href="auth.css?v=20260916-5"/>
-  <link rel="stylesheet" href="cs.css?v=20260917-1"/>
+  <link rel="stylesheet" href="cs.css?v=20260918-3"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -266,20 +266,6 @@
   </div>
 </div>
 
-<!-- CS詳細モーダル -->
-<div id="csDetailModal" class="modal-overlay">
-  <div class="modal-box cs-detail-box">
-    <div class="cs-modal-header">
-      <h2 id="csDetailTitle">CS詳細</h2>
-      <button class="btn-modal-close" onclick="closeCsDetailModal()" style="color:white;">✕</button>
-    </div>
-    <div class="modal-body" id="csDetailBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeCsDetailModal()">閉じる</button>
-    </div>
-  </div>
-</div>
-
 <!-- 削除確認モーダル（共通） -->
 <div id="csDeleteModal" class="modal-overlay">
   <div class="modal-box delete-modal-box">
@@ -302,63 +288,10 @@
   </div>
 </div>
 
-<!-- JSON取込モーダル -->
-<div id="csImportModal" class="modal-overlay">
-  <div class="modal-box" style="max-width:680px;">
-    <div class="modal-header">
-      <h2>データ一括取込</h2>
-      <button class="btn-modal-close" onclick="closeCsImportModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="background:#e8f0fc;border:1px solid #c5d8f5;border-radius:8px;padding:14px;font-size:13px;color:#0f3d82;margin-bottom:16px;line-height:1.8;">
-        <strong>取込について：</strong><br>
-        ・全国共通のCSコレクション（cs_projects）に登録されます<br>
-        ・JSONは配列形式（[{...},{...}]）に対応<br>
-        ・stTerminal → ステーション端末として取込みます
-      </div>
-      <div class="form-group">
-        <label class="form-label">JSONファイルを選択（.json / .txt）</label>
-        <input type="file" id="csImportFileInput" accept=".json,.txt" class="form-input" style="padding:8px;" onchange="previewCsImport(this)"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">元データ表を貼り付け（Excelからコピー）</label>
-        <textarea id="csImportTableInput" class="form-textarea" rows="6" placeholder="病院名から始まる表をここに貼り付け"></textarea>
-        <button type="button" class="btn btn-secondary" style="margin-top:8px;" onclick="previewCsTableImport()">貼り付け表を確認</button>
-      </div>
-      <div id="csImportPreview" style="display:none;margin-top:12px;">
-        <div style="font-size:13px;font-weight:600;color:#1e2330;margin-bottom:8px;">
-          取込予定データ：<span id="csImportCount" style="font-size:15px;color:#1a5cb8;">0</span> 件
-        </div>
-        <div style="max-height:260px;overflow-y:auto;border:1px solid #e2e6ed;border-radius:6px;">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
-            <thead>
-              <tr style="background:#f8f9fb;">
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">病院名</th>
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">営業担当</th>
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">CS担当</th>
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">稼働開始日</th>
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">システム種別</th>
-              </tr>
-            </thead>
-            <tbody id="csImportPreviewBody"></tbody>
-          </table>
-        </div>
-      </div>
-      <div id="csImportNoData" style="display:none;text-align:center;padding:24px;color:#9aa5b4;font-size:13px;">取込可能なデータが見つかりませんでした</div>
-      <div id="csImportError" style="color:#c0392b;font-size:12px;margin-top:8px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeCsImportModal()">キャンセル</button>
-      <button class="btn btn-primary" id="csImportExecuteBtn" onclick="executeCsImport()" disabled>取込実行</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast" class="toast"></div>
 
 <script src="firebase-config.js"></script>
 <script src="auth.js?v=20260917-2"></script>
-<script src="cs-card-data.js"></script>
-<script src="cs.js?v=20260918-2"></script>
+<script src="cs.js?v=20260918-3"></script>
 </body>
 </html>

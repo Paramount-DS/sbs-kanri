@@ -24,41 +24,6 @@
   --cs-red-bd:     #ef5350;
 }
 
-/* CSスイッチボタン（案件管理→CS） */
-.btn-cs-switch {
-  background: var(--cs-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background .15s, transform .1s;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.btn-cs-switch:hover { background: var(--cs-primary-dk); transform: translateY(-1px); }
-
-/* 案件管理へ戻るボタン */
-.btn-back-project {
-  background: #f0f2f5;
-  color: #1a5cb8;
-  border: 1px solid #e2e6ed;
-  border-radius: 22px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background .15s, transform .1s, box-shadow .15s;
-  box-shadow: 0 2px 0 #d2d6df, 0 3px 8px rgba(0,0,0,.08);
-}
-.btn-back-project:hover { background: #e2e6ed; transform: translateY(-1px); box-shadow: 0 3px 0 #c6ccd6, 0 5px 12px rgba(0,0,0,.10); }
-
 /* CSヘッダー */
 .cs-app-header {
   background: #eb8db0;
@@ -80,15 +45,6 @@
 .btn-cs-list:hover { background: rgba(255,255,255,.34); transform: translateY(-1px); box-shadow: 0 3px 0 rgba(157,76,110,.36), 0 5px 12px rgba(0,0,0,.12); }
 .btn-add-cs { background: white; color: var(--cs-primary); border: none; border-radius: 22px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s; white-space: nowrap; box-shadow: 0 2px 0 #eeb6ca, 0 3px 8px rgba(239,149,181,.22); }
 .btn-add-cs:hover { background: var(--cs-primary-lt); transform: translateY(-1px); box-shadow: 0 3px 0 #e7a8c0, 0 5px 12px rgba(239,149,181,.25); }
-.btn-cs-top { background: #f0f2f5; color: #9d4c6e; border: 1px solid var(--cs-rose); border-radius: 22px; padding: 8px 14px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background .15s, transform .1s, box-shadow .15s; box-shadow: 0 2px 0 #eeb6ca, 0 3px 8px rgba(239,149,181,.16); }
-.btn-cs-top:hover { background: var(--cs-primary-lt); transform: translateY(-1px); box-shadow: 0 3px 0 #e7a8c0, 0 5px 12px rgba(239,149,181,.20); }
-
-.cs-phase-bar { background: #fff7fb; border-bottom: 1px solid var(--cs-rose); padding: 7px 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.cs-phase-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 9px; color: #9d4c6e; font-size: 12px; font-weight: 400; white-space: nowrap; min-width: max-content; }
-.cs-phase-item { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 105px; padding: 3px 5px; flex-shrink: 0; }
-.cs-phase-item strong { color: #7f3f5b; font-size: 12px; line-height: 1.25; }
-.cs-phase-item small { color: #9d4c6e; font-size: 10px; line-height: 1.25; }
-.cs-phase-arrow { color: #b86d8b; font-size: 12px; font-weight: 400; flex-shrink: 0; }
 .cs-branch-bar { background:#fff7fb; border-bottom:1px solid var(--cs-rose); padding:8px 20px; overflow-x:auto; position:sticky; top:58px; z-index:119; box-shadow:0 2px 5px rgba(42,48,60,.06); }
 .cs-branch-tabs { max-width:1200px; margin:0 auto; display:flex; gap:6px; min-width:max-content; }
 .cs-branch-tab { border:1px solid #dca3ba; border-radius:999px; background:#fff; color:#7f3f5b; padding:7px 13px; font:inherit; cursor:pointer; }
@@ -98,19 +54,6 @@
 .btn-cs-export { border:1px solid var(--cs-primary); border-radius:6px; background:#fff; color:var(--cs-primary); padding:8px 11px; font-weight:700; cursor:pointer; }
 .cs-export-period { display:flex; align-items:center; gap:7px; font-size:12px; white-space:nowrap; }
 .cs-export-period input { width:146px; min-height:36px; padding:6px 9px; border:1px solid #efc4d4; border-radius:6px; color:#4a3440; font:inherit; }
-
-/* CS統計バー */
-.cs-stats-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 10px 20px; }
-.cs-stats-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
-.cs-stat-item { display: flex; align-items: center; gap: 6px; }
-.cs-stat-num { font-weight: 700; font-size: 18px; line-height: 1; }
-.cs-stat-label { color: #5a6475; font-size: 12px; }
-.cs-stat-div { width: 1px; height: 24px; background: #e2e6ed; }
-.cs-total .cs-stat-num  { color: var(--cs-primary); }
-.cs-green .cs-stat-num  { color: var(--cs-green); }
-.cs-yellow .cs-stat-num { color: var(--cs-yellow); }
-.cs-orange .cs-stat-num { color: var(--cs-orange); }
-.cs-red .cs-stat-num    { color: var(--cs-red); }
 
 /* CS検索バー */
 .cs-search-bar { background: white; border-bottom: 1px solid #e2e6ed; padding: 12px 20px; position: sticky; top: 107px; z-index: 110; box-shadow: 0 2px 6px rgba(42,48,60,.08); }
@@ -152,7 +95,6 @@
 .cs-duplicate-badge { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #fff1f0; color: #c0392b; border: 1px solid #f3b5b0; font-size: 10px; font-weight: 800; line-height: 1.4; white-space: nowrap; }
 .cs-card-sub { font-size: 12px; color: #5a6475; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .cs-meta-tag { background: var(--cs-lavender); color: var(--cs-purple); padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-.cs-status-tag { background: var(--cs-primary-lt); color: #9d4c6e; border: 1px solid var(--cs-pink); padding: 1px 7px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
 /* 導入製品バッジ */
 .cs-products { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -184,7 +126,6 @@
 .cs-visit-status-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 600; }
 .cs-visit-status-badge.onboarding { background: #e3f2fd; color: #1565c0; }
 .cs-visit-status-badge.support    { background: var(--cs-primary-lt); color: var(--cs-primary-dk); }
-.cs-visit-score { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: white; color: #4a3440; border: 1px solid #dfe3ea; font-weight: 700; white-space: nowrap; }
 .cs-visit-task { display: grid; grid-template-columns: minmax(80px, auto) minmax(0, 1fr); gap: 8px; padding-left: 28px; color: #4a3440; font-size: 10px; }
 .cs-visit-task span { color: #697386; overflow-wrap: anywhere; }
 .btn-cs-visit-edit, .btn-cs-visit-delete { border: 1px solid #e2e6ed; border-radius: 4px; padding: 2px 7px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; background: white; color: #5a6475; }
@@ -193,19 +134,6 @@
 .btn-cs-visit-delete:hover { background: #fde8e8; }
 .cs-visit-date { font-size: 11px; color: #9aa5b4; margin-left: auto; }
 .cs-visit-text { font-size: 12px; color: #3a4252; white-space: pre-wrap; word-break: break-all; margin-top: 2px; padding-left: 28px; }
-.cs-card-memo { background: #fff9fb; border: 1px solid var(--cs-rose); border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #4a3440; white-space: pre-wrap; word-break: break-all; }
-
-/* CSタスク */
-.cs-task-section { border: 1px solid var(--cs-rose); background: #fff9fb; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-.cs-task-current { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; color: #5a6475; }
-.cs-task-current strong { color: #9d4c6e; font-size: 12px; }
-.cs-task-current em { color: #4a3440; font-style: normal; font-weight: 700; }
-.cs-task-controls { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.cs-task-phase-select, .cs-task-item-select { width: 100%; min-width: 0; border: 1px solid var(--cs-rose); border-radius: 6px; padding: 7px 9px; font-size: 12px; font-family: inherit; color: #4a3440; background: white; }
-.cs-task-phase-select:focus, .cs-task-item-select:focus { outline: none; border-color: var(--cs-primary); box-shadow: 0 0 0 3px rgba(239,149,181,.20); }
-.cs-task-detail { display: grid; grid-template-columns: 1fr; gap: 5px; font-size: 11px; color: #4a3440; line-height: 1.55; }
-.cs-task-detail div { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 6px; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
-.cs-task-detail span { color: #9d4c6e; font-weight: 800; white-space: nowrap; }
 
 /* カードアクション */
 .cs-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
@@ -232,16 +160,9 @@
 /* ステータスセレクト */
 .status-select-cs { border: 2px solid var(--cs-rose); border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; background: white; width: 100%; cursor: pointer; font-family: inherit; }
 .status-select-cs:focus { border-color: var(--cs-primary); }
-.visit-task-detail { display: grid; gap: 6px; margin: -2px 0 10px; padding: 10px; border: 1px solid #e1e4e9; border-radius: 6px; background: #f8f9fb; }
-.visit-task-detail div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; align-items: start; }
-.visit-task-detail span { color: #697386; font-size: 10px; font-weight: 800; }
-.visit-task-detail strong, .visit-task-detail p { margin: 0; color: #2f3643; font-size: 11px; line-height: 1.5; }
-.visit-score-range { width: 100%; accent-color: var(--cs-primary); cursor: pointer; }
-.visit-score-scale { display: flex; justify-content: space-between; color: #9aa5b4; font-size: 10px; }
 
 /* CSモーダルボックス */
 .cs-modal-box { max-width: 520px; }
-.cs-detail-box { max-width: 640px; }
 
 /* CS一覧 */
 .cs-list-content { max-width: 1400px; margin: 0 auto; padding: 20px; }
@@ -261,7 +182,6 @@
 .cs-list-hospital { font-weight: 700; }
 .cs-list-hospital-link { color: #9d4c6e; text-decoration: underline; text-underline-offset: 2px; }
 .cs-list-hospital-link:hover { color: var(--cs-primary); }
-.cs-list-products { color: #5a6475; font-size: 12px; }
 .cs-list-memo { color: #4d5667; font-size: 13px; }
 .cs-list-memo-preview { min-height:48px; padding:8px 10px; border:1px solid #f0dbe4; border-radius:7px; background:#fffafd; white-space:pre-wrap; word-break:break-word; line-height:1.55; }
 .cs-list-loading { text-align: center; padding: 48px; color: #9aa5b4; font-size: 14px; }
@@ -274,7 +194,6 @@
 
 /* スマホ */
 @media (max-width: 600px) {
-  .cs-list-page .cs-stats-bar { display:none; }
   .cs-list-page .cs-search-bar { display:block; position:sticky; top:0; padding:7px 10px; }
   .cs-list-page .cs-search-inner { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
   .cs-list-page .cs-search-inner > * { display:none; }
@@ -301,7 +220,6 @@
   .cs-card-page .header-main-nav a,
   .cs-list-page .header-main-nav a { min-width:0; padding:7px 2px; font-size:10px; text-align:center; }
   .cs-list-page .cs-list-content { padding:10px; }
-  .cs-card-page .cs-stats-bar { display: none; }
   .cs-card-page .cs-branch-bar { position: sticky; top: 0; padding: 7px 10px; }
   .cs-card-page .cs-search-bar { display:block; position:sticky; top:49px; padding:7px 10px; }
   .cs-card-page .cs-search-inner { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
@@ -318,7 +236,6 @@
   .cs-grid { grid-template-columns: 1fr !important; gap: 12px; }
   .cs-card-actions { flex-direction: column; }
   .btn-cs-next { width: 100%; }
-  .cs-task-controls { grid-template-columns: 1fr; }
   .cs-list-page .cs-table-wrap { overflow:visible; background:transparent; box-shadow:none; }
   .cs-list-page .cs-status-table,
   .cs-list-page .cs-status-table tbody,
@@ -397,67 +314,4 @@
 @media (max-width:600px) {
   .cs-install-info { grid-template-columns:1fr 1fr; }
   .cs-card-actions { grid-template-columns:1fr repeat(3,auto); }
-}
-
-
-
-/* =============================================
-   ドラッグ＆ドロップ オーバーレイ
-   ============================================= */
-.drop-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,80,160,.12);
-  backdrop-filter: blur(4px);
-  z-index: 9998;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.drop-overlay.active {
-  display: flex;
-  pointer-events: all;
-}
-.drop-overlay-inner {
-  background: #fff;
-  border: 2.5px dashed #0071e3;
-  border-radius: 20px;
-  padding: 48px 64px;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,.15);
-  animation: dropPulse .6s ease infinite alternate;
-}
-.drop-icon { font-size: 48px; margin-bottom: 12px; }
-.drop-text { font-size: 20px; font-weight: 700; color: #0071e3; margin-bottom: 6px; }
-.drop-subtext { font-size: 13px; color: #6e6e73; }
-@keyframes dropPulse {
-  from { transform: scale(1); }
-  to   { transform: scale(1.02); }
-}
-
-/* JSON取込ボタン */
-.btn-cs-import {
-  background: rgba(255,255,255,.18);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,.35);
-  border-radius: 20px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background .15s;
-  font-family: inherit;
-}
-.btn-cs-import:hover { background: rgba(255,255,255,.3); }
-.btn-cs-card-import {
-  background: #fff;
-  color: var(--cs-primary);
-  border-color: #fff;
-  font-weight: 700;
-  box-shadow: 0 2px 0 rgba(157,76,110,.28), 0 3px 8px rgba(0,0,0,.10);
-}
-.btn-cs-card-import:hover {
-  background: var(--cs-primary-lt);
 }

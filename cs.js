@@ -88,16 +88,6 @@ function showToast(msg, type = "success") {
 }
 
 // =============================================
-// 訪問ラベル生成
-// オンボーディング→①オンボーディング
-// サポート→④サポート（通番で）
-// =============================================
-function visitLabel(index, status) {
-  const num = circleNum(index + 1);
-  return `${num} ${getVisitStatusLabel(status)}`;
-}
-
-// =============================================
 // 最終訪問日からのカラー判定
 // =============================================
 function getVisitColorClass(p) {
@@ -308,35 +298,6 @@ async function migrateLegacyCsRecords(docs) {
   } finally {
     legacyCsMigrationRunning = false;
   }
-}
-
-function getCurrentCsPhase(p) {
-  return getCsPhase(getProjectActivityPhase(p));
-}
-
-function getCsTaskSelection(p) {
-  const phase = getCurrentCsPhase(p);
-  const selectedItem = phase.key === p.csTaskPhase
-    ? (phase.items.find(row => row.item === p.csTaskItem) || phase.items[0])
-    : phase.items[0];
-  return { phase, selectedItem };
-}
-
-function createCsTaskSection(p) {
-  const { phase, selectedItem } = getCsTaskSelection(p);
-  return `
-    <div class="cs-task-section">
-      <div class="cs-task-current">現在のフェーズ：<strong>${escapeHtml(phase.label)}</strong><em>${escapeHtml(phase.goal)}</em></div>
-      <div class="cs-task-controls">
-        <select class="cs-task-item-select" onchange="updateCsTaskItem('${p.id}', this.value)">
-          ${phase.items.map(row => `<option value="${escapeHtml(row.item)}"${row.item === selectedItem.item ? " selected" : ""}>${escapeHtml(row.item)}</option>`).join("")}
-        </select>
-      </div>
-      <div class="cs-task-detail">
-        <div><span>内容</span>${escapeHtml(selectedItem.content)}</div>
-        <div><span>効果</span>${escapeHtml(selectedItem.effect)}</div>
-      </div>
-    </div>`;
 }
 
 // =============================================
@@ -638,13 +599,12 @@ function initCs() {
   if (visitForm) visitForm.addEventListener("submit", saveVisit);
 
   // モーダル外クリックで閉じる
-  ["visitModal","csDetailModal","csDeleteModal"].forEach(id => {
+  ["visitModal","csDeleteModal"].forEach(id => {
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.addEventListener("click", e => {
       if (e.target.id === id) {
         if      (id === "visitModal")    closeVisitModal();
-        else if (id === "csDetailModal") closeCsDetailModal();
         else                             closeCsDeleteModal();
       }
     });
@@ -1006,85 +966,6 @@ async function deleteVisit(projectId, index) {
   }
 }
 
-async function updateCsTaskPhase(projectId, phaseKey) {
-  const phase = getCsPhase(phaseKey);
-  const firstItem = phase.items[0]?.item || "";
-  try {
-    await db.collection("cs_projects").doc(projectId).update({
-      csTaskPhase: phase.key,
-      csTaskItem: firstItem,
-    });
-    showToast("CSフェーズを更新しました");
-  } catch (err) {
-    console.error(err);
-    showToast("CSフェーズの更新に失敗しました", "error");
-  }
-}
-
-async function updateCsTaskItem(projectId, item) {
-  const p = allCsProjects.find(x => x.id === projectId);
-  const phase = p ? getCurrentCsPhase(p) : CS_PHASES[0];
-  try {
-    await db.collection("cs_projects").doc(projectId).update({ csTaskPhase: phase.key, csTaskItem: item });
-    showToast("CS項目を更新しました");
-  } catch (err) {
-    console.error(err);
-    showToast("CS項目の更新に失敗しました", "error");
-  }
-}
-
-// =============================================
-// CS詳細ポップアップ
-// =============================================
-function openCsDetailModal(id) {
-  const p = allCsProjects.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById("csDetailTitle").textContent = p.hospitalName || "CS詳細";
-
-  const products = getProductLabels(p, true);
-  const systems = getSystemLabels(p);
-
-  const visits = p.visits || [];
-  const visitRows = visits.map((v, i) => {
-    const label   = visitLabel(i, v.status);
-    const dateStr = v.startDate
-      ? (v.endDate && v.endDate !== v.startDate ? `${v.startDate} 〜 ${v.endDate}` : v.startDate)
-      : "—";
-    return `<tr>
-      <th>${label}</th>
-      <td>
-        <div style="font-size:11px;color:#5a6475;">${dateStr}</div>
-        <div style="margin-top:3px;white-space:pre-wrap;">${escapeHtml(v.freeText || "—")}</div>
-      </td>
-    </tr>`;
-  }).join("");
-
-  document.getElementById("csDetailBody").innerHTML = `
-    <table class="detail-table">
-      <tbody>
-        <tr><th>病院名</th><td>${escapeHtml(p.hospitalName||"")}</td></tr>
-        <tr><th>導入病棟名</th><td>${escapeHtml(p.ward||"")}</td></tr>
-        <tr><th>稼働開始日</th><td>${p.startDate||"—"}</td></tr>
-        <tr><th>サポートエンド</th><td>${p.supportEndDate||"—"}</td></tr>
-        <tr><th>担当営業</th><td>${escapeHtml(p.salesPerson||"")}</td></tr>
-        <tr><th>支援担当</th><td>${escapeHtml(p.csPerson||"")}</td></tr>
-        <tr><th>導入担当者</th><td>${escapeHtml(p.solPm||"")}</td></tr>
-        <tr><th>システム種類</th><td>${systems.length ? systems.map(escapeHtml).join("、") : "—"}</td></tr>
-        <tr><th>導入製品</th><td>${products.length ? products.join("、") : "—"}</td></tr>
-        <tr><th>病床移動運用</th><td>${escapeHtml(p.moveOp||"")}</td></tr>
-        <tr><th>病床番号変更担当</th><td>${escapeHtml(p.bedNumStaff||"")}</td></tr>
-        <tr><th>床頭台移動担当</th><td>${escapeHtml(p.bedMoveStaff||"")}</td></tr>
-        <tr><th>備考</th><td style="white-space:pre-wrap;">${escapeHtml(p.memo||"")}</td></tr>
-        ${visitRows}
-      </tbody>
-    </table>`;
-  document.getElementById("csDetailModal").classList.add("open");
-}
-
-function closeCsDetailModal() {
-  document.getElementById("csDetailModal").classList.remove("open");
-}
-
 // =============================================
 // CS削除
 // =============================================
@@ -1118,250 +999,7 @@ async function confirmCsDelete() {
   }
 }
 
-// =============================================
-// 初期化
-// =============================================
-// =============================================
-// JSON 取込
-// =============================================
-let csImportData = [];
-
-function openCsImportModal() {
-  csImportData = [];
-  document.getElementById("csImportFileInput").value = "";
-  const tableInput = document.getElementById("csImportTableInput");
-  if (tableInput) tableInput.value = "";
-  document.getElementById("csImportPreview").style.display = "none";
-  document.getElementById("csImportNoData").style.display = "none";
-  document.getElementById("csImportError").textContent = "";
-  document.getElementById("csImportExecuteBtn").disabled = true;
-  document.getElementById("csImportModal").classList.add("open");
-}
-
-function closeCsImportModal() {
-  document.getElementById("csImportModal").classList.remove("open");
-  csImportData = [];
-}
-
-function normalizeCsHeader(value) {
-  return String(value || "")
-    .replace(/\s+/g, "")
-    .replace(/[▼▽]/g, "")
-    .trim();
-}
-
-function isCheckedCell(value) {
-  return ["○", "〇", "◯", "o", "O", "1", "true", "TRUE", "有", "あり", "yes", "YES"].includes(String(value || "").trim());
-}
-
-function getTableValue(row, indexes, names) {
-  for (const name of names) {
-    const index = indexes[normalizeCsHeader(name)];
-    if (index !== undefined) return row[index] || "";
-  }
-  return "";
-}
-
-function parseCsTableText(text) {
-  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  if (lines.length < 2) return [];
-  const delimiter = lines[0].includes("\t") ? "\t" : ",";
-  const headers = lines[0].split(delimiter).map(normalizeCsHeader);
-  const indexes = {};
-  headers.forEach((header, index) => { if (header) indexes[header] = index; });
-
-  return lines.slice(1).map(line => {
-    const row = line.split(delimiter);
-    const hospitalName = getTableValue(row, indexes, ["病院名"]);
-    return {
-      type: "cs",
-      hospitalName,
-      prefecture: getTableValue(row, indexes, ["都道府県"]),
-      ward: getTableValue(row, indexes, ["導入病棟"]),
-      startDate: getTableValue(row, indexes, ["稼働開始日"]),
-      supportEndDate: getTableValue(row, indexes, ["稼働終了日"]),
-      salesPerson: getTableValue(row, indexes, ["担当営業"]),
-      csPerson: getTableValue(row, indexes, ["支援担当", "担当CS"]),
-      solPm: getTableValue(row, indexes, ["SOL PM", "SOLPM"]),
-      systemType1: getTableValue(row, indexes, ["システム種類1"]),
-      systemType2: getTableValue(row, indexes, ["システム種類2"]),
-      hasBedside: isCheckedCell(getTableValue(row, indexes, ["BS端末"])),
-      hasBedNavi: isCheckedCell(getTableValue(row, indexes, ["ベッドナビ"])),
-      hasNemiri: isCheckedCell(getTableValue(row, indexes, ["眠りSCAN"])),
-      hasRisha: isCheckedCell(getTableValue(row, indexes, ["離床CATCH"])),
-      hasVital: isCheckedCell(getTableValue(row, indexes, ["バイタル連携"])),
-      hasEhr: isCheckedCell(getTableValue(row, indexes, ["EHR連携"])),
-      hasNurse: isCheckedCell(getTableValue(row, indexes, ["NC情報連携"])),
-      hasNcNotify: isCheckedCell(getTableValue(row, indexes, ["NC通知連携"])),
-      hasCamera: isCheckedCell(getTableValue(row, indexes, ["カメラ"])),
-      hasMobile: isCheckedCell(getTableValue(row, indexes, ["モバイル"])),
-      cameraCount: getTableValue(row, indexes, ["カメラ数量", "カメラ（数量）"]),
-      mobileCount: getTableValue(row, indexes, ["モバイル数量", "モバイル（数量）"]),
-      moveOp: getTableValue(row, indexes, ["病床移動時の運用"]),
-      bedNumStaff: getTableValue(row, indexes, ["病床番号変更担当"]),
-      bedMoveStaff: getTableValue(row, indexes, ["床頭台移動担当"]),
-      memo: getTableValue(row, indexes, ["メモ"]),
-      visits: [],
-    };
-  }).filter(row => row.hospitalName);
-}
-
-function normalizeCsImportItems(json) {
-  const rows = Array.isArray(json) ? json : [json];
-  const byHospital = new Map();
-  rows.map(item => ({
-    type:            "cs",
-    hospitalName:    String(item.hospitalName || "").trim(),
-    prefecture:      String(item.prefecture || "").trim(),
-    ward:            String(item.ward         || "").trim(),
-    startDate:       String(item.startDate    || "").trim(),
-    supportEndDate:  String(item.supportEndDate || "").trim(),
-    salesPerson:     String(item.salesPerson  || "").trim(),
-    csPerson:        String(item.csPerson     || "").trim(),
-    solPm:           String(item.solPm        || "").trim(),
-    systemType1:     String(item.systemType1  || "").trim(),
-    systemType2:     String(item.systemType2  || "").trim(),
-    hasBedside:      Boolean(item.hasBedside),
-    hasBedNavi:      Boolean(item.hasBedNavi),
-    hasNemiri:       Boolean(item.hasNemiri),
-    hasRisha:        Boolean(item.hasRisha),
-    hasVital:        Boolean(item.hasVital),
-    hasEhr:          Boolean(item.hasEhr),
-    hasNurse:        Boolean(item.hasNurse),
-    hasNcNotify:     Boolean(item.hasNcNotify),
-    hasCamera:       Boolean(item.hasCamera),
-    hasMobile:       Boolean(item.hasMobile),
-    cameraCount:     String(item.cameraCount || "").trim(),
-    mobileCount:     String(item.mobileCount || "").trim(),
-    moveOp:          String(item.moveOp       || "").trim(),
-    bedNumStaff:     String(item.bedNumStaff  || "").trim(),
-    bedMoveStaff:    String(item.bedMoveStaff || "").trim(),
-    memo:            String(item.memo         || "").trim(),
-    visits:          Array.isArray(item.visits) ? item.visits : [],
-    createdAt:       new Date().toISOString(),
-  })).filter(d => d.hospitalName).forEach(item => {
-    byHospital.set(item.hospitalName, item);
-  });
-  return Array.from(byHospital.values());
-}
-
-function renderCsImportPreview(data) {
-  csImportData = normalizeCsImportItems(data);
-  const preview = document.getElementById("csImportPreview");
-  const noData = document.getElementById("csImportNoData");
-  const executeBtn = document.getElementById("csImportExecuteBtn");
-
-  preview.style.display = "none";
-  noData.style.display = "none";
-  executeBtn.disabled = true;
-
-  if (csImportData.length === 0) {
-    noData.style.display = "block";
-    return;
-  }
-
-  document.getElementById("csImportCount").textContent = csImportData.length;
-  document.getElementById("csImportPreviewBody").innerHTML = csImportData.map(d => `
-    <tr style="border-bottom:1px solid #f0f2f5;">
-      <td style="padding:7px 10px;font-weight:600;">${escapeHtml(d.hospitalName)}</td>
-      <td style="padding:7px 10px;">${escapeHtml(d.salesPerson || "―")}</td>
-      <td style="padding:7px 10px;">${escapeHtml(d.csPerson || "―")}</td>
-      <td style="padding:7px 10px;">${escapeHtml(d.startDate || "未設定")}</td>
-      <td style="padding:7px 10px;">${escapeHtml(d.systemType1 || "―")}</td>
-    </tr>`).join("");
-  preview.style.display = "block";
-  executeBtn.disabled = false;
-}
-
-function previewBundledCsCardImport() {
-  document.getElementById("csImportFileInput").value = "";
-  const tableInput = document.getElementById("csImportTableInput");
-  if (tableInput) tableInput.value = "";
-  document.getElementById("csImportError").textContent = "";
-  document.getElementById("csImportModal").classList.add("open");
-
-  if (!Array.isArray(window.CS_CARD_IMPORT_DATA) || window.CS_CARD_IMPORT_DATA.length === 0) {
-    document.getElementById("csImportNoData").style.display = "block";
-    document.getElementById("csImportExecuteBtn").disabled = true;
-    document.getElementById("csImportError").textContent = "CS-CARDデータが見つかりませんでした";
-    return;
-  }
-
-  renderCsImportPreview(window.CS_CARD_IMPORT_DATA);
-}
-
-function previewCsTableImport() {
-  const input = document.getElementById("csImportTableInput");
-  document.getElementById("csImportFileInput").value = "";
-  document.getElementById("csImportError").textContent = "";
-
-  const rows = parseCsTableText(input ? input.value : "");
-  if (!rows.length) {
-    document.getElementById("csImportPreview").style.display = "none";
-    document.getElementById("csImportNoData").style.display = "block";
-    document.getElementById("csImportExecuteBtn").disabled = true;
-    document.getElementById("csImportError").textContent = "貼り付け表から取込可能なデータが見つかりませんでした";
-    return;
-  }
-  renderCsImportPreview(rows);
-}
-
-function previewCsImport(input) {
-  const file = input.files[0]; if (!file) return;
-  const tableInput = document.getElementById("csImportTableInput");
-  if (tableInput) tableInput.value = "";
-  document.getElementById("csImportError").textContent = "";
-  document.getElementById("csImportPreview").style.display = "none";
-  document.getElementById("csImportNoData").style.display = "none";
-  document.getElementById("csImportExecuteBtn").disabled = true;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      let json;
-      try { json = JSON.parse(e.target.result); }
-      catch(err) { document.getElementById("csImportError").textContent = "JSONの形式が正しくありません: " + err.message; return; }
-      renderCsImportPreview(json);
-    } catch(err) {
-      console.error(err);
-      document.getElementById("csImportError").textContent = "読み込みに失敗しました: " + err.message;
-    }
-  };
-  reader.readAsText(file, "utf-8");
-}
-
-async function executeCsImport() {
-  if (!csImportData.length) return;
-  const btn = document.getElementById("csImportExecuteBtn");
-  btn.disabled = true; btn.textContent = "取込中...";
-  let added = 0, updated = 0, ng = 0;
-  for (const item of csImportData) {
-    try {
-      const snapshot = await db.collection("cs_projects")
-        .where("hospitalName", "==", item.hospitalName)
-        .get();
-      const existing = snapshot.docs.find(doc => (doc.data() || {}).type === "cs") || snapshot.docs[0];
-      if (existing) {
-        await db.collection("cs_projects").doc(existing.id).set(item, { merge: true });
-        updated++;
-      } else {
-        await db.collection("cs_projects").add(item);
-        added++;
-      }
-    }
-    catch(err) { console.error(err); ng++; }
-  }
-  btn.textContent = "取込実行";
-  closeCsImportModal();
-  const ok = added + updated;
-  showToast(ng === 0 ? `✅ ${added}件追加、${updated}件上書きしました` : `⚠️ ${ok}件成功、${ng}件失敗`, ng === 0 ? "success" : "error");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("csDashboardRoot")) return;
   initCs();
-  const importModal = document.getElementById("csImportModal");
-  if (importModal) importModal.addEventListener("click", (e) => {
-    if (e.target.id === "csImportModal") closeCsImportModal();
-  });
 });
