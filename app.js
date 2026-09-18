@@ -314,7 +314,7 @@ function openDetailModal(id) {
         ["稼働日（予定含む）", p.goLiveDate],
         ["施設名", p.hospitalName],
         ["新規/既存", p.newOrExisting],
-        ["スマベ", p.smabe],
+        ["システム種類", p.smabe],
         ["メイン担当", p.mainPerson],
         ["サブ担当", p.subPerson],
     ]},
@@ -375,9 +375,23 @@ function closeDetailModal() { document.getElementById("detailModal").classList.r
 // =============================================
 // 案件フォーム
 // =============================================
+function setProjectSelectValue(id, value) {
+  const select = document.getElementById(id);
+  select.querySelectorAll("option[data-legacy-value]").forEach(option => option.remove());
+  const selectedValue = String(value || "");
+  if (selectedValue && !Array.from(select.options).some(option => option.value === selectedValue)) {
+    const option = new Option(`${selectedValue}（旧データ）`, selectedValue);
+    option.dataset.legacyValue = "true";
+    select.add(option);
+  }
+  select.value = selectedValue;
+}
+
 function openAddModal() {
   document.getElementById("modalTitle").textContent=`新規案件登録（${BRANCHES[currentBranch].label}）`;
   document.getElementById("projectForm").reset();
+  setProjectSelectValue("formNewOrExisting", "");
+  setProjectSelectValue("formSmabe", "");
   document.getElementById("editProjectId").value="";
   document.getElementById("btnRestoreProject").style.display="none";
   populateStaffInputs("","");
@@ -396,8 +410,8 @@ function openEditModal(id) {
   document.getElementById("formGoLiveDate").value   =p.goLiveDate||"";
   document.getElementById("formProjectType").value  =p.projectType||"new";
   updateFormTaskSelect(p.projectType||"new");
-  document.getElementById("formNewOrExisting").value=p.newOrExisting||"";
-  document.getElementById("formSmabe").value        =p.smabe||"";
+  setProjectSelectValue("formNewOrExisting", p.newOrExisting);
+  setProjectSelectValue("formSmabe", p.smabe);
   document.getElementById("formCurrentTask").value  =p.currentTask??0;
   document.getElementById("formKeieiShukai").value  =p.keieiShukai||"";
   document.getElementById("formKyokaBedNum").value  =p.kyokaBedNum||"";

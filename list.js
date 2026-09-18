@@ -189,7 +189,7 @@ function openDetailModal(id) {
         ["稼働日（予定含む）", p.goLiveDate],
         ["施設名", p.hospitalName],
         ["新規/既存", p.newOrExisting],
-        ["スマベ", p.smabe],
+        ["システム種類", p.smabe],
         ["メイン担当", p.mainPerson],
         ["サブ担当", p.subPerson],
     ]},

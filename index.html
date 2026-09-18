@@ -127,11 +127,25 @@
         </div>
         <div class="form-group">
           <label class="form-label">新規/既存</label>
-          <input type="text" id="formNewOrExisting" class="form-input" placeholder="例：新規"/>
+          <select id="formNewOrExisting" class="form-select">
+            <option value="">-- 選択 --</option>
+            <option value="新規">新規</option>
+            <option value="既存">既存</option>
+          </select>
         </div>
         <div class="form-group">
-          <label class="form-label">スマベ</label>
-          <input type="text" id="formSmabe" class="form-input" placeholder="例：スマベ"/>
+          <label class="form-label">システム種類</label>
+          <select id="formSmabe" class="form-select">
+            <option value="">-- 選択 --</option>
+            <option value="SBS">SBS</option>
+            <option value="LiteA">LiteA</option>
+            <option value="LiteB">LiteB</option>
+            <option value="LiteC">LiteC</option>
+            <option value="LiteD">LiteD</option>
+            <option value="Connectハイブリッド">Connectハイブリッド</option>
+            <option value="Connectオンプレ">Connectオンプレ</option>
+            <option value="眠りSCAN Viewer">眠りSCAN Viewer</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">メイン担当</label>
@@ -302,7 +316,7 @@
                 <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">稼働予定日</th>
                 <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">許可病床数</th>
                 <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">新規/既存</th>
-                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">スマベ</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:1px solid #e2e6ed;white-space:nowrap;">システム種類</th>
               </tr>
             </thead>
             <tbody id="importPreviewBody"></tbody>
@@ -325,6 +339,6 @@
 
 <script src="firebase-config.js"></script>
 <script src="auth.js?v=20260917-2"></script>
-<script src="app.js?v=20260917-1"></script>
+<script src="app.js?v=20260918-4"></script>
 </body>
 </html>
