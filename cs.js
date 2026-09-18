@@ -215,6 +215,10 @@ function getCsPhase(key) {
   return CS_PHASES.find(phase => phase.key === key) || CS_PHASES[0];
 }
 
+function normalizeCsActivityItem(item) {
+  return item === "利用状況モニタリング" ? "現地サポート" : item;
+}
+
 function getCurrentCsPhase(p) {
   return getCsPhase(getProjectActivityPhase(p));
 }
@@ -278,7 +282,7 @@ function createCsCard(p) {
           <button type="button" class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
         </div>
-        ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(v.taskItem)}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
+        ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(normalizeCsActivityItem(v.taskItem))}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
         ${v.assignee ? `<div class="cs-visit-assignee">対応者：${escapeHtml(v.assignee)}</div>` : ""}
         ${v.freeText ? `<div class="cs-visit-text">${escapeHtml(v.freeText)}</div>` : ""}
       </div>`;
@@ -463,7 +467,7 @@ async function exportCsActivitiesXlsx() {
     if ((from || to) && !visits.length) return;
     const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
     const date = latest.endDate || latest.startDate || "";
-    rows.push([latest.taskItem || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
+    rows.push([normalizeCsActivityItem(latest.taskItem) || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
   });
   const sheet = XLSX.utils.aoa_to_sheet(rows);
   sheet["!cols"] = [{wch:22},{wch:28},{wch:14},{wch:16},{wch:50},{wch:14},{wch:12}];
@@ -831,7 +835,7 @@ function openVisitModal(projectId, editIndex = -1) {
   document.getElementById("visitIsVisit").checked = false;
   if (targetVisit) {
     document.getElementById("visitStatus").value = normalizeVisitStatus(targetVisit.status);
-    updateVisitTaskOptions(targetVisit.taskItem || "");
+    updateVisitTaskOptions(normalizeCsActivityItem(targetVisit.taskItem) || "");
     document.getElementById("visitStartDate").value = targetVisit.startDate || "";
     document.getElementById("visitEndDate").value = targetVisit.endDate || "";
     document.getElementById("visitFreeText").value = targetVisit.freeText || "";
