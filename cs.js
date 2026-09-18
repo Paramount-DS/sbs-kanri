@@ -46,6 +46,7 @@ let csFilterPrefecture = "";
 let csFilterSales = "";
 let pendingCsDeleteId = null;
 let supportEndMigrationRunning = false;
+let legacyCsMigrationRunning = false;
 
 // =============================================
 // ユーティリティ
@@ -216,7 +217,97 @@ function getCsPhase(key) {
 }
 
 function normalizeCsActivityItem(item) {
-  return item === "利用状況モニタリング" ? "現地サポート" : item;
+  return LEGACY_CS_ACTIVITY_TARGETS[item] || item;
+}
+
+// 旧版の活動区分を現行の選択肢へ移すためだけの対応表。登録画面の選択肢には使わない。
+const LEGACY_CS_ACTIVITY_TARGETS = {
+  "勉強会":"オンボーディング①",
+  "キックオフ実施":"オンボーディング①", "導入目的共有":"オンボーディング①",
+  "成功指標設定（KPI）":"オンボーディング②", "環境構築":"オンボーディング②",
+  "設定支援":"オンボーディング③", "マニュアル提供":"オンボーディング④",
+  "初期教育":"オンボーディング⑤", "運用設計":"オンボーディング⑥",
+  "利用状況モニタリング":"現地サポート", "ログ分析":"遠隔サポート",
+  "未利用機能活用提案":"遠隔サポート", "定例会実施":"その他",
+  "問題点ヒアリング":"その他", "利用者教育":"現地サポート", "管理者教育":"現地サポート",
+  "データ分析支援":"遠隔サポート", "ベストプラクティス紹介":"遠隔サポート",
+  "他施設事例紹介":"遠隔サポート", "業務改善提案":"その他",
+  "KPI達成支援":"遠隔サポート", "新機能案内":"遠隔サポート",
+  "導入効果測定":"遠隔サポート", "KPI評価":"遠隔サポート", "ROI算出":"遠隔サポート",
+  "成果報告会":"現地サポート", "院内展開支援":"現地サポート", "活用レポート提供":"遠隔サポート",
+  "契約更新管理":"その他", "更新提案":"その他", "機能追加提案":"その他",
+  "ライセンス追加提案":"その他", "他部署展開提案":"その他", "上位プラン提案":"その他",
+  "ユーザー会参加":"現地サポート", "事例取材":"現地サポート",
+  "講演協力":"現地サポート", "紹介依頼":"その他", "共同プロジェクト":"その他",
+  "リファレンス顧客化":"その他",
+};
+
+function migrateLegacyVisit(visit) {
+  const oldItem = String(visit.taskItem || "").trim();
+  const mappedItem = LEGACY_CS_ACTIVITY_TARGETS[oldItem];
+  const status = mappedItem
+    ? (CS_PHASES[0].items.some(row => row.item === mappedItem) ? CS_PHASES[0].key : CS_PHASES[1].key)
+    : normalizeVisitStatus(visit.status);
+  const options = getCsPhase(status).items.map(row => row.item);
+  const taskItem = mappedItem || (options.includes(oldItem) ? oldItem : oldItem ? "その他" : "");
+  const hasLegacyFields = !!(visit.taskContent || visit.taskEffect);
+  if (visit.status === status && oldItem === taskItem && !hasLegacyFields) return visit;
+  const archived = visit.legacyActivity || {
+    status: visit.status || "", taskItem: oldItem,
+    taskContent: visit.taskContent || "", taskEffect: visit.taskEffect || "",
+  };
+  return { ...visit, status, taskItem, taskContent:"", taskEffect:"", legacyActivity:archived };
+}
+
+function legacyCsUpdates(project) {
+  const updates = {};
+  if (Array.isArray(project.visits)) {
+    const visits = project.visits.map(migrateLegacyVisit);
+    if (visits.some((visit,index) => visit !== project.visits[index])) updates.visits = visits;
+  }
+  const mappedProjectItem = LEGACY_CS_ACTIVITY_TARGETS[project.csTaskItem];
+  const phase = mappedProjectItem
+    ? (CS_PHASES[0].items.some(row => row.item === mappedProjectItem) ? CS_PHASES[0].key : CS_PHASES[1].key)
+    : normalizeVisitStatus(project.csTaskPhase);
+  if (project.csTaskPhase && project.csTaskPhase !== phase) updates.csTaskPhase = phase;
+  if (project.csTaskItem) {
+    const options = getCsPhase(phase).items.map(row => row.item);
+    const item = mappedProjectItem
+      || (options.includes(project.csTaskItem) ? project.csTaskItem : "その他");
+    if (item !== project.csTaskItem) updates.csTaskItem = item;
+  }
+  const dashboardPhase = project.csDashboard?.currentPhase;
+  if (dashboardPhase && dashboardPhase !== normalizeVisitStatus(dashboardPhase)) {
+    updates["csDashboard.currentPhase"] = normalizeVisitStatus(dashboardPhase);
+  }
+  return updates;
+}
+
+async function migrateLegacyCsProject(ref) {
+  return db.runTransaction(async transaction => {
+    const current = await transaction.get(ref);
+    if (!current.exists) return false;
+    const updates = legacyCsUpdates(current.data());
+    if (!Object.keys(updates).length) return false;
+    transaction.update(ref, updates);
+    return true;
+  });
+}
+
+async function migrateLegacyCsRecords(docs) {
+  if (legacyCsMigrationRunning) return;
+  const targets = docs.filter(doc => Object.keys(legacyCsUpdates(doc.data())).length);
+  if (!targets.length) return;
+  legacyCsMigrationRunning = true;
+  try {
+    for (const doc of targets) await migrateLegacyCsProject(doc.ref);
+    showToast(`${targets.length}件の旧活動区分を現行区分へ更新しました`);
+  } catch (error) {
+    console.error("旧活動区分の移行に失敗しました:", error);
+    showToast("旧活動区分の更新に失敗しました", "error");
+  } finally {
+    legacyCsMigrationRunning = false;
+  }
 }
 
 function getCurrentCsPhase(p) {
@@ -282,7 +373,7 @@ function createCsCard(p) {
           <button type="button" class="btn-cs-visit-delete" onclick="deleteVisit('${p.id}', ${realIdx})">削除</button>
           <span class="cs-visit-date">${dateStr}</span>
         </div>
-        ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(normalizeCsActivityItem(v.taskItem))}</strong><span>${escapeHtml(v.taskContent || "")}</span></div>` : ""}
+        ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(normalizeCsActivityItem(v.taskItem))}</strong></div>` : ""}
         ${v.assignee ? `<div class="cs-visit-assignee">対応者：${escapeHtml(v.assignee)}</div>` : ""}
         ${v.freeText ? `<div class="cs-visit-text">${escapeHtml(v.freeText)}</div>` : ""}
       </div>`;
@@ -467,7 +558,7 @@ async function exportCsActivitiesXlsx() {
     if ((from || to) && !visits.length) return;
     const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
     const date = latest.endDate || latest.startDate || "";
-    rows.push([normalizeCsActivityItem(latest.taskItem) || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || latest.taskContent || "", date, visits.length]);
+    rows.push([normalizeCsActivityItem(latest.taskItem) || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || "", date, visits.length]);
   });
   const sheet = XLSX.utils.aoa_to_sheet(rows);
   sheet["!cols"] = [{wch:22},{wch:28},{wch:14},{wch:16},{wch:50},{wch:14},{wch:12}];
@@ -578,6 +669,7 @@ function initCs() {
       renderCsBranchTabs();
       renderCsView();
       migrateExistingSupportEndDates(snapshot.docs);
+      migrateLegacyCsRecords(snapshot.docs);
     }, err => {
       console.error("CS Firestore error:", err);
       showToast("CSデータ取得に失敗しました", "error");

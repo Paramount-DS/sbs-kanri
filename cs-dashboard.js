@@ -428,6 +428,15 @@ function initCsDashboard(){
   dashboardDocRef=db.collection("cs_projects").doc(id);
   dashboardUnsubscribe=dashboardDocRef.onSnapshot(async snapshot=>{
     if(!snapshot.exists){document.getElementById("dashboardHospitalName").textContent="案件が見つかりません";return;}
+    try {
+      if (Object.keys(legacyCsUpdates(snapshot.data())).length) {
+        await migrateLegacyCsProject(snapshot.ref);
+        return; // 更新後のスナップショットで描画する
+      }
+    } catch (error) {
+      console.error("旧活動区分の移行に失敗しました:", error);
+      showToast("旧活動区分の更新に失敗しました", "error");
+    }
     await migrateDashboard(snapshot); dashboardProject={id:snapshot.id,...snapshot.data(),csDashboard:mergedDashboard(snapshot.data().csDashboard||{})}; renderDashboard(dashboardProject);
   },error=>{console.error(error);showToast("データ取得に失敗しました","error");});
 }
