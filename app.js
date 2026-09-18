@@ -4,9 +4,9 @@
 
 // 案件タイプ定義
 const PROJECT_TYPES = {
-  new: { label: "新規導入", color: "#1a5cb8", badgeColor: "#e8f0fc", badgeText: "#1a5cb8" },
-  add: { label: "病棟追加", color: "#16a085", badgeColor: "#e6f4ee", badgeText: "#16a085" },
-  vup: { label: "バージョンアップ", color: "#8e44ad", badgeColor: "#f3e8ff", badgeText: "#8e44ad" },
+  new: { label: "新規導入", badgeColor: "#e8f0fc", badgeText: "#1a5cb8" },
+  add: { label: "病棟追加", badgeColor: "#e6f4ee", badgeText: "#16a085" },
+  vup: { label: "バージョンアップ", badgeColor: "#f3e8ff", badgeText: "#8e44ad" },
 };
 
 // タイプ別工程ステップ
@@ -24,9 +24,6 @@ const TASKS_MAP = {
   ],
 };
 
-// 後方互換のため既存コードで使うTASKS（新規導入デフォルト）
-const TASKS = TASKS_MAP.new;
-
 // 現在表示中のタブ
 let currentProjectType = "new";
 
@@ -35,15 +32,15 @@ function getTasksForType(type) {
 }
 
 const BRANCHES = {
-  nagoya:   { label:"名古屋支店", collection:"nagoya_projects",   color:"#1a5cb8" },
-  sapporo:  { label:"札幌支店",   collection:"sapporo_projects",  color:"#0077b6" },
-  sendai:   { label:"仙台支店",   collection:"sendai_projects",   color:"#2d6a4f" },
-  tokyo:    { label:"東京支店",   collection:"tokyo_projects",    color:"#c0392b" },
-  yokohama: { label:"横浜支店",   collection:"yokohama_projects", color:"#8e44ad" },
-  saitama:  { label:"さいたま支店", collection:"saitama_projects", color:"#d35400" },
-  osaka:    { label:"大阪支店",   collection:"osaka_projects",    color:"#16a085" },
-  hiroshima:{ label:"広島支店",   collection:"hiroshima_projects",color:"#c0392b" },
-  fukuoka:  { label:"福岡支店",   collection:"fukuoka_projects",  color:"#27ae60" },
+  nagoya:   { label:"名古屋支店", collection:"nagoya_projects" },
+  sapporo:  { label:"札幌支店",   collection:"sapporo_projects" },
+  sendai:   { label:"仙台支店",   collection:"sendai_projects" },
+  tokyo:    { label:"東京支店",   collection:"tokyo_projects" },
+  yokohama: { label:"横浜支店",   collection:"yokohama_projects" },
+  saitama:  { label:"さいたま支店", collection:"saitama_projects" },
+  osaka:    { label:"大阪支店",   collection:"osaka_projects" },
+  hiroshima:{ label:"広島支店",   collection:"hiroshima_projects" },
+  fukuoka:  { label:"福岡支店",   collection:"fukuoka_projects" },
 };
 
 const DELETE_PASSWORD = "0000";
@@ -59,20 +56,10 @@ let importData = [];
 // =============================================
 function switchBranch(branchKey) {
   currentBranch = branchKey;
-  const branch = BRANCHES[branchKey];
-  // ヘッダーは白固定（ブランドカラー維持）
   document.getElementById("listViewBtn").href = `list.html?branch=${branchKey}`;
   updateStaffFilter();
   initFirestore();
   localStorage.setItem("selectedBranch", branchKey);
-}
-
-function adjustColor(hex, amount) {
-  const num = parseInt(hex.replace("#",""), 16);
-  const r = Math.min(255,Math.max(0,(num>>16)+amount));
-  const g = Math.min(255,Math.max(0,((num>>8)&0xff)+amount));
-  const b = Math.min(255,Math.max(0,(num&0xff)+amount));
-  return `#${((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}`;
 }
 
 // =============================================

@@ -15,22 +15,20 @@ const TASKS_MAP = {
     "01 商談中","02 見積提出","03 受注","04 キックオフ","05 構築準備","06 稼働","07 稼働後フォロー",
   ],
 };
-const TASKS = TASKS_MAP.new;
-
 function getTasksForType(type) {
   return TASKS_MAP[type || "new"] || TASKS_MAP.new;
 }
 
 const BRANCHES = {
-  nagoya:   { label:"名古屋支店", collection:"nagoya_projects",   color:"#1a5cb8" },
-  sapporo:  { label:"札幌支店",   collection:"sapporo_projects",  color:"#0077b6" },
-  sendai:   { label:"仙台支店",   collection:"sendai_projects",   color:"#2d6a4f" },
-  tokyo:    { label:"東京支店",   collection:"tokyo_projects",    color:"#c0392b" },
-  yokohama: { label:"横浜支店",   collection:"yokohama_projects", color:"#8e44ad" },
-  saitama:  { label:"さいたま支店", collection:"saitama_projects", color:"#d35400" },
-  osaka:    { label:"大阪支店",   collection:"osaka_projects",    color:"#16a085" },
-  hiroshima:{ label:"広島支店",   collection:"hiroshima_projects",color:"#c0392b" },
-  fukuoka:  { label:"福岡支店",   collection:"fukuoka_projects",  color:"#27ae60" },
+  nagoya:   { collection:"nagoya_projects" },
+  sapporo:  { collection:"sapporo_projects" },
+  sendai:   { collection:"sendai_projects" },
+  tokyo:    { collection:"tokyo_projects" },
+  yokohama: { collection:"yokohama_projects" },
+  saitama:  { collection:"saitama_projects" },
+  osaka:    { collection:"osaka_projects" },
+  hiroshima:{ collection:"hiroshima_projects" },
+  fukuoka:  { collection:"fukuoka_projects" },
 };
 
 let currentBranch = "nagoya";
@@ -145,8 +143,6 @@ function initFirestore() {
 
 function switchBranch(branchKey) {
   currentBranch = branchKey;
-  const branch = BRANCHES[branchKey];
-  // ヘッダーは白固定
   document.getElementById("backBtn").href=`index.html?branch=${branchKey}`;
   updateStaffFilter();
   filterPerson=""; filterStatus="";
@@ -154,14 +150,6 @@ function switchBranch(branchKey) {
   document.getElementById("statusFilter").value="";
   initFirestore();
   localStorage.setItem("selectedBranch", branchKey);
-}
-
-function adjustColor(hex, amount) {
-  const num = parseInt(hex.replace("#",""),16);
-  const r = Math.min(255,Math.max(0,(num>>16)+amount));
-  const g = Math.min(255,Math.max(0,((num>>8)&0xff)+amount));
-  const b = Math.min(255,Math.max(0,(num&0xff)+amount));
-  return `#${((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}`;
 }
 
 function updateStaffFilter() {
