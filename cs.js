@@ -683,7 +683,7 @@ function setCsListView(view) {
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", active ? "true" : "false");
   });
-  document.body.dataset.csListView = target;
+  document.body.dataset.csListMode = target;
   try { localStorage.setItem("csListView", target); } catch (_) {}
   if (location.hash !== `#${target}`) history.replaceState(null, "", `#${target}`);
 }

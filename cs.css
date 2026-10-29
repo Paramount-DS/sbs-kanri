@@ -343,7 +343,7 @@
 .cs-list-tab { border:1px solid #dca3ba; border-radius:999px; background:#fff; color:#7f3f5b; padding:8px 18px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
 .cs-list-tab.active { background:var(--cs-primary); border-color:var(--cs-primary); color:#fff; }
 .cs-basic-export { margin-left:auto; }
-body[data-cs-list-view="basic"] #csDateSort { display:none; }
+body[data-cs-list-mode="basic"] #csDateSort { display:none; }
 
 /* 支援活動一覧：メモの見切れ修正・ステータスに活動区分 */
 .cs-status-table { min-width:1080px; }
