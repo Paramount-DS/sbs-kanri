@@ -152,7 +152,7 @@ function rowsHtml(rows) { return `<dl class="dashboard-data-list">${rows.map(([k
 
 function basicRows(p) {
   const projectType={new:"新規導入",add:"病棟追加",vup:"バージョンアップ"}[p.projectType]||p.projectType;
-  return [["院名",shown(p.hospitalName)],["備考",shown(p.memo)],["都道府県",shown(p.prefecture)],["案件タイプ",shown(projectType)],["導入病棟名",shown(p.ward)],["稼働開始日",shown(p.startDate)],["サポートエンド",shown(p.supportEndDate)],
+  return [["病院名",shown(p.hospitalName)],["備考",shown(p.memo)],["都道府県",shown(p.prefecture)],["案件タイプ",shown(projectType)],["導入病棟名",shown(p.ward)],["稼働開始日",shown(p.startDate)],["サポートエンド",shown(p.supportEndDate)],
     ["担当営業",shown(p.salesPerson)],["支援担当",shown(p.csPerson)],["導入担当者",shown(p.solPm)],["システム種類",shown(getSystemLabels(p).join(" / "))],
     ["導入製品",shown(getProductLabels(p).join(" / "))],["病床移動運用",shown(p.moveOp)],["病床番号変更担当",shown(p.bedNumStaff)],
     ["床頭台移動担当",shown(p.bedMoveStaff)],["新規/既存",shown(p.newOrExisting)],
@@ -178,14 +178,14 @@ function renderSummary(p,c) {
   const visitCount=visits.filter(isVisitRecord).length;
   const currentLatest=getLatestPhaseVisit(p,phase), currentLatestDate=currentLatest?.endDate||currentLatest?.startDate||"";
   const items=[
-    ["現在フェーズ",getVisitStatusLabel(phase),"入力予定を確認","","summary-phase"],
+    ["現在フェーズ",getCurrentPhaseLabel(p),getCurrentPhaseInfo(p).source==="manual"?"手動設定（クリックで変更）":"訪問履歴から自動反映（クリックで変更）","","summary-phase"],
     ["対応回数",`${visits.length}`,"累計記録数","","summary-response"],
     ["訪問回数",`${visitCount}`,"累計記録数","","summary-visits"],
     ["稼働期間",daysBetween(p.startDate)===null?"-":`${daysBetween(p.startDate)}日`,daysBetween(p.startDate)===null?"":`（${daysToYearsMonths(daysBetween(p.startDate))}）`,"","summary-duration"],
     ["更新まで",c.renewalDays===null?"-":`${c.renewalDays}日`,c.renewalDays===null?"":`（${daysToYearsMonths(c.renewalDays)}）`,"","summary-renewal"],
     ["最終対応から",shown(daysBetween(currentLatestDate)),"日経過","","summary-lastvisit"]
   ];
-  document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>`<div class="dashboard-summary-item ${cls} ${size}"><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`).join("");
+  document.getElementById("dashboardSummary").innerHTML=items.map(([l,v,s,cls,size])=>{const phaseAttr=size==="summary-phase"?` role="button" tabindex="0" title="現在フェーズを変更" onclick="openDashboardModal('phase')" onkeydown="if(event.key==='Enter')openDashboardModal('phase')"`:"";return `<div class="dashboard-summary-item ${cls} ${size}"${phaseAttr}><span>${l}</span><strong>${escapeHtml(String(v))}</strong><em>${escapeHtml(String(s))}</em></div>`;}).join("");
 }
 function renderVisitsCard(p) {
   const visits=(p.visits||[]).map((visit,index)=>({visit,index})).sort((a,b)=>(b.visit.endDate||b.visit.startDate||"").localeCompare(a.visit.endDate||a.visit.startDate||""));
@@ -252,7 +252,7 @@ function addDashboardRole(){document.getElementById("dashboardRoleRows")?.insert
 function removeDashboardRole(button){const rows=document.querySelectorAll(".dashboard-role-input-row");if(rows.length>1)button.closest(".dashboard-role-input-row")?.remove();else{const row=button.closest(".dashboard-role-input-row");row.querySelector('[name="roleName"]').value="";row.querySelector('[name="roleCount"]').value="";}}
 function basicForm(p) {
   const projectTypes=[["new","🏥 新規導入"],["add","➕ 病棟追加"],["vup","🔄 バージョンアップ"]];
-  const fields=[["hospitalName","院名","text"],["prefecture","都道府県","select",[["","-"],...CS_PREFECTURES.map(value=>[value,value])]],["projectType","案件タイプ","select",projectTypes],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
+  const fields=[["hospitalName","病院名","text"],["prefecture","都道府県","select",[["","-"],...CS_PREFECTURES.map(value=>[value,value])]],["projectType","案件タイプ","select",projectTypes],["ward","導入病棟名","text"],["startDate","稼働開始日","date"],["supportEndDate","サポートエンド","date"],
     ["salesPerson","担当営業","text"],["csPerson","支援担当","text"],["solPm","導入担当者","text"],["systemType1","システム種類 1","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],["systemType2","システム種類 2","select",[["","-"],...CS_SYSTEM_TYPES.map(value=>[value,value])]],
     ["moveOp","病床移動運用","text"],["bedNumStaff","病床番号変更担当","text"],["bedMoveStaff","床頭台移動担当","text"],
     ["newOrExisting","新規/既存","text"],
@@ -284,13 +284,14 @@ function openDashboardModal(category) {
   const data=getDashboardData(dashboardProject);
   let html="";
   if(category==="basic") html=basicForm(dashboardProject);
-  else if(category==="phase") html=inputHtml(["currentPhase","現在フェーズ","select",CS_PHASES.map(p=>[p.key,getVisitStatusLabel(p.key)])],data.currentPhase);
+  else if(category==="phase") html=`<div class="form-group"><label class="form-label">現在フェーズ</label><select class="form-select" id="dashboardCurrentPhase"></select></div><div class="form-group"><label class="form-label">活動区分</label><select class="form-select" id="dashboardCurrentTask"></select><small id="dashboardCurrentPhaseHint" class="cs-current-phase-hint"></small></div><div class="form-group visit-check-item"><label class="dashboard-phase-done"><input type="checkbox" name="onboardingCompleted"${dashboardProject.onboardingCompleted?" checked":""}> オンボーディング完了</label><small class="cs-current-phase-hint">チェックありの場合、自動判定はサポートの最新を反映します</small></div>`;
   else if(category==="visits") html=visitsForm(dashboardProject);
   else if(category==="usage") html=usageForm(data.usage);
   else if(category==="csActivity") html=csActivityForm(data.csActivity);
   else if(category==="workReduction") html=workReductionForm(dashboardProject.workReduction||{});
   else html=DASHBOARD_FIELDS[category].map(f=>inputHtml(f,data[category][f[0]])).join("");
   document.getElementById("dashboardModalBody").innerHTML=html;
+  if(category==="phase") setupCurrentPhaseInputs(document.getElementById("dashboardCurrentPhase"),document.getElementById("dashboardCurrentTask"),document.getElementById("dashboardCurrentPhaseHint"),dashboardProject);
   if(category==="basic") {
     const start=document.querySelector('#dashboardEditForm [name="startDate"]'),end=document.querySelector('#dashboardEditForm [name="supportEndDate"]');
     if(start&&end) start.addEventListener("change",()=>{end.value=supportEndSevenYearsAfter(start.value);});
@@ -306,10 +307,18 @@ async function saveDashboardForm(event) {
   try {
     if(category==="basic") {
       ["hasBedside","hasBedNavi","hasNemiri","hasRisha","hasVital","hasEhr","hasNurse","hasNcNotify","hasCamera","hasMobile"].forEach(k=>values[k]=form.elements[k]?.checked||false);
-      if(!values.hospitalName.trim()) throw new Error("院名は必須です");
+      if(!values.hospitalName.trim()) throw new Error("病院名は必須です");
       if(!values.supportEndDate&&values.startDate) values.supportEndDate=supportEndSevenYearsAfter(values.startDate);
       await dashboardDocRef.set(values,{merge:true});
-    } else if(category==="phase") await dashboardDocRef.set({csDashboard:{...getDashboardData(dashboardProject),currentPhase:values.currentPhase}},{merge:true});
+    } else if(category==="phase") {
+      const updates=currentPhaseUpdates(document.getElementById("dashboardCurrentPhase"),document.getElementById("dashboardCurrentTask"));
+      const completed=!!form.elements.onboardingCompleted?.checked;
+      const now=new Date().toISOString();
+      if(completed!==!!dashboardProject.onboardingCompleted){updates.onboardingCompleted=completed;updates.onboardingCompletedUpdatedAt=now;}
+      // 完了チェックと同時に手動設定した場合は手動設定を優先する
+      if(updates.csCurrentPhaseUpdatedAt) updates.csCurrentPhaseUpdatedAt=now;
+      if(Object.keys(updates).length) await dashboardDocRef.set(updates,{merge:true});
+    }
     else if(category==="visits") await saveDashboardVisit(values);
     else if(category==="workReduction") {
       const current=mergedWorkReduction(dashboardProject.workReduction||{}),systemType=values.systemType||"",section=systemType==="SBS"?"sbs":"connect";

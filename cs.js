@@ -210,6 +210,137 @@ function normalizeCsActivityItem(item) {
   return LEGACY_CS_ACTIVITY_TARGETS[item] || item;
 }
 
+// =============================================
+// 現在フェーズ（フェーズ＋活動区分）
+//  - 自動：訪問履歴から判定
+//      オンボーディング未完了 → オンボーディング①〜⑥の最新を最優先
+//      オンボーディング完了   → サポートの最新を反映
+//  - 手動：カード編集／詳細画面で変更。手動変更より後に訪問履歴の追加・編集
+//          または完了チェックの変更があれば自動判定に戻る
+// =============================================
+const CS_PHASE_ONBOARDING = "活用支援/オンボーディング";
+const CS_PHASE_SUPPORT = "活用支援/サポート";
+const ONBOARDING_STEP_ITEMS = ["オンボーディング①","オンボーディング②","オンボーディング③","オンボーディング④","オンボーディング⑤","オンボーディング⑥"];
+
+function visitDateKey(visit) {
+  return visit?.endDate || visit?.startDate || String(visit?.createdAt || "").slice(0, 10) || "";
+}
+
+function pickLatestVisit(entries) {
+  return entries.slice().sort((a, b) => visitDateKey(b.visit).localeCompare(visitDateKey(a.visit)) || b.index - a.index)[0]?.visit || null;
+}
+
+function getAutoCurrentPhase(p) {
+  const entries = (p.visits || []).map((visit, index) => ({
+    index,
+    visit: { ...visit, status: normalizeVisitStatus(visit.status), taskItem: normalizeCsActivityItem(String(visit.taskItem || "").trim()) },
+  }));
+  if (p.onboardingCompleted) {
+    const latestSupport = pickLatestVisit(entries.filter(e => e.visit.status === CS_PHASE_SUPPORT));
+    return { phase: CS_PHASE_SUPPORT, taskItem: latestSupport?.taskItem || "", visit: latestSupport };
+  }
+  const latestStep = pickLatestVisit(entries.filter(e => e.visit.status === CS_PHASE_ONBOARDING && ONBOARDING_STEP_ITEMS.includes(e.visit.taskItem)));
+  if (latestStep) return { phase: CS_PHASE_ONBOARDING, taskItem: latestStep.taskItem, visit: latestStep };
+  const latestAny = pickLatestVisit(entries);
+  if (latestAny) return { phase: latestAny.status, taskItem: latestAny.taskItem || "", visit: latestAny };
+  return { phase: CS_PHASE_ONBOARDING, taskItem: "", visit: null };
+}
+
+function getLatestVisitRecordedAt(p) {
+  return (p.visits || []).map(v => String(v.updatedAt || v.createdAt || "")).filter(Boolean).sort().at(-1) || "";
+}
+
+function getManualCurrentPhase(p) {
+  const phase = String(p.csCurrentPhase || "").trim();
+  if (!phase || !p.csCurrentPhaseUpdatedAt) return null;
+  return { phase: normalizeVisitStatus(phase), taskItem: String(p.csCurrentTask || "").trim(), updatedAt: String(p.csCurrentPhaseUpdatedAt) };
+}
+
+function getCurrentPhaseInfo(p) {
+  const manual = getManualCurrentPhase(p);
+  if (manual) {
+    const newerVisit = getLatestVisitRecordedAt(p) > manual.updatedAt;
+    const newerCompletion = String(p.onboardingCompletedUpdatedAt || "") > manual.updatedAt;
+    if (!newerVisit && !newerCompletion) return { phase: manual.phase, taskItem: manual.taskItem, source: "manual" };
+  }
+  return { ...getAutoCurrentPhase(p), source: "auto" };
+}
+
+function formatCurrentPhase(info) {
+  return [getVisitStatusLabel(info.phase), info.taskItem].filter(Boolean).join("/");
+}
+
+function getCurrentPhaseLabel(p) {
+  return formatCurrentPhase(getCurrentPhaseInfo(p));
+}
+
+// 表示用HTML（"/" の位置でだけ改行させる）
+function currentPhaseHtml(info) {
+  return escapeHtml(formatCurrentPhase(info)).replace(/\//g, "/<wbr>");
+}
+
+// 現在フェーズ入力欄（カード編集・詳細画面で共用）
+function currentPhaseTaskOptions(phaseKey, selected = "") {
+  if (!phaseKey) return "";
+  const items = getCsPhase(normalizeVisitStatus(phaseKey)).items.map(row => row.item);
+  return `<option value="">-- 活動区分を選択 --</option>` + items.map(item => `<option value="${escapeHtml(item)}"${item === selected ? " selected" : ""}>${escapeHtml(item)}</option>`).join("");
+}
+
+function setupCurrentPhaseInputs(phaseSelect, taskSelect, hint, p) {
+  if (!phaseSelect || !taskSelect) return;
+  const info = p ? getCurrentPhaseInfo(p) : { phase: "", taskItem: "", source: "auto" };
+  const autoLabel = p ? formatCurrentPhase(getAutoCurrentPhase(p)) : "訪問履歴から自動判定";
+  phaseSelect.innerHTML = `<option value="">自動（訪問履歴から反映）</option>` + CS_PHASES.map(row => `<option value="${escapeHtml(row.key)}">${escapeHtml(getVisitStatusLabel(row.key))}</option>`).join("");
+  const initialPhase = info.source === "manual" ? info.phase : "";
+  const initialTask = info.source === "manual" ? info.taskItem : "";
+  phaseSelect.value = initialPhase;
+  phaseSelect.dataset.initialPhase = initialPhase;
+  phaseSelect.dataset.initialTask = initialTask;
+  const sync = (selectedTask = "") => {
+    const phase = phaseSelect.value;
+    taskSelect.disabled = !phase;
+    taskSelect.innerHTML = phase ? currentPhaseTaskOptions(phase, selectedTask) : `<option value="">（自動）</option>`;
+    if (hint) hint.textContent = phase ? "手動で設定します。以降に訪問履歴を追加・編集すると自動判定に戻ります。" : `自動判定：${autoLabel}`;
+  };
+  phaseSelect.onchange = () => sync("");
+  sync(initialTask);
+}
+
+// 保存用の差分（変更がなければ空オブジェクト）
+function currentPhaseUpdates(phaseSelect, taskSelect) {
+  if (!phaseSelect || !taskSelect) return {};
+  const phase = phaseSelect.value, task = phase ? taskSelect.value : "";
+  const initialPhase = phaseSelect.dataset.initialPhase || "", initialTask = phaseSelect.dataset.initialTask || "";
+  if (phase === initialPhase && task === initialTask) return {};
+  if (!phase) return { csCurrentPhase: "", csCurrentTask: "", csCurrentPhaseUpdatedAt: "" };
+  return { csCurrentPhase: phase, csCurrentTask: task, csCurrentPhaseUpdatedAt: new Date().toISOString() };
+}
+
+async function toggleOnboardingCompleted(projectId, checked, input) {
+  try {
+    await db.collection("cs_projects").doc(projectId).update({
+      onboardingCompleted: !!checked,
+      onboardingCompletedUpdatedAt: new Date().toISOString(),
+    });
+    showToast(checked ? "オンボーディング完了にしました" : "オンボーディング完了を解除しました");
+  } catch (err) {
+    console.error(err);
+    if (input) input.checked = !checked;
+    showToast("保存に失敗しました", "error");
+  }
+}
+
+// 複数値（、区切り等）の分割
+function splitMultiValue(value) {
+  return String(value || "").split(/[、,，\n\/／・]+/).map(s => s.trim()).filter(Boolean);
+}
+
+function pillsHtml(values, emptyText = "—") {
+  return values.length
+    ? `<div class="cs-pill-list">${values.map(v => `<span class="cs-pill">${escapeHtml(v)}</span>`).join("")}</div>`
+    : `<span class="cs-pill-empty">${emptyText}</span>`;
+}
+
 // 旧版の活動区分を現行の選択肢へ移すためだけの対応表。登録画面の選択肢には使わない。
 const LEGACY_CS_ACTIVITY_TARGETS = {
   "勉強会":"オンボーディング①",
@@ -309,6 +440,7 @@ function createCsCard(p) {
   const visits     = p.visits || [];
   const duplicateBadge = isDuplicateCsHospital(p) ? `<span class="cs-duplicate-badge">重複</span>` : "";
   const hospitalDisplay = getHospitalDisplayParts(p);
+  const currentPhase = getCurrentPhaseInfo(p);
 
   const products = getProductLabels(p);
   const productChecks = products.length
@@ -350,7 +482,8 @@ function createCsCard(p) {
       <div class="cs-card-head-grid">
         <div class="cs-card-identity">
           <div class="cs-card-title">${escapeHtml(hospitalDisplay.hospitalName)}${hospitalDisplay.quickMemo ? `　<span class="cs-card-quick-memo">メモ:${escapeHtml(hospitalDisplay.quickMemo)}</span>` : ""}${duplicateBadge}</div>
-          <div class="cs-card-current-phase"><span>現在フェーズ</span><strong>${escapeHtml(getVisitStatusLabel(getProjectActivityPhase(p)))}</strong></div>
+          <div class="cs-card-current-phase"><span>現在フェーズ</span><strong title="${currentPhase.source === "manual" ? "手動設定" : "訪問履歴から自動反映"}">${currentPhaseHtml(currentPhase)}</strong></div>
+          <label class="cs-onboarding-done"><input type="checkbox"${p.onboardingCompleted ? " checked" : ""} onchange="toggleOnboardingCompleted('${p.id}', this.checked, this)"/> オンボーディング完了</label>
           <div class="cs-card-sub">
             ${p.branch ? `<span class="cs-meta-tag cs-meta-branch">${escapeHtml(p.branch)}支店</span>` : ""}
             ${p.prefecture ? `<span class="cs-meta-tag">${escapeHtml(p.prefecture)}</span>` : ""}
@@ -394,7 +527,7 @@ function renderCsProjects() {
     const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
     const matchName   = searchable.includes(csSearchQuery.toLowerCase());
     const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchStatus = !csFilterStatus || normalizeVisitStatus(getLatestVisit(p)?.status) === csFilterStatus;
+    const matchStatus = !csFilterStatus || getCurrentPhaseInfo(p).phase === csFilterStatus;
     const matchBranch = !csFilterBranch || p.branch === csFilterBranch;
     const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
     const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
@@ -416,7 +549,6 @@ function renderCsProjects() {
 }
 
 function createCsListRow(p) {
-  const latest = getLatestVisit(p);
   const latestDate = getLatestVisitDateText(p);
   const memo = getLatestVisitMemo(p);
   return `<tr>
@@ -424,28 +556,30 @@ function createCsListRow(p) {
     <td data-label="支援担当">${escapeHtml(p.csPerson || "—")}</td>
     <td data-label="担当営業">${escapeHtml(p.salesPerson || "—")}</td>
     <td data-label="都道府県">${escapeHtml(p.prefecture || "—")}</td>
-    <td data-label="現在フェーズ"><span class="cs-list-status">${escapeHtml(getVisitStatusLabel(latest?.status))}</span></td>
+    <td data-label="CSステータス"><span class="cs-list-status">${currentPhaseHtml(getCurrentPhaseInfo(p))}</span></td>
     <td data-label="最終対応日"><span class="cs-list-visit">${escapeHtml(latestDate)}</span></td>
     <td class="cs-list-memo" data-label="メモ"><div class="cs-list-memo-preview">${escapeHtml(memo || "—")}</div></td>
   </tr>`;
+}
+
+function getFilteredCsListProjects() {
+  const q = csSearchQuery.toLowerCase();
+  return allCsProjects.filter(p => {
+    const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
+    const matchName = searchable.includes(q);
+    const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
+    const matchStatus = !csFilterStatus || getCurrentPhaseInfo(p).phase === csFilterStatus;
+    const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
+    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
+    return matchName && matchPerson && matchStatus && matchPrefecture && matchSales;
+  });
 }
 
 function renderCsList() {
   const tbody = document.getElementById("csTableBody");
   if (!tbody) return;
 
-  let filtered = allCsProjects.filter(p => {
-    const q = csSearchQuery.toLowerCase();
-    const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
-    const matchName = searchable.includes(q);
-    const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const latestStatus = normalizeVisitStatus(getLatestVisit(p)?.status);
-    const matchStatus = !csFilterStatus || latestStatus === csFilterStatus;
-    const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
-    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
-    return matchName && matchPerson && matchStatus && matchPrefecture && matchSales;
-  });
-
+  const filtered = getFilteredCsListProjects();
   filtered.sort((a, b) => {
     const aDate=getLatestVisitDateValue(a),bDate=getLatestVisitDateValue(b);
     if(!aDate&&bDate)return 1;
@@ -459,7 +593,154 @@ function renderCsList() {
   tbody.innerHTML = filtered.length
     ? filtered.map(createCsListRow).join("")
     : `<tr><td colspan="7" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+  renderCsBasicList(filtered);
   updateCsStats();
+}
+
+// =============================================
+// 基本情報一覧（表示・Excel出力で共用の列定義）
+//   type: text / multi（、等で区切られた値）/ products / systems
+// =============================================
+const CS_PRODUCT_DEFS = [
+  ["hasBedside","BS端末"],["hasBedNavi","ベッドナビ"],["hasNemiri","眠りSCAN"],["hasRisha","離床CATCH"],["hasVital","バイタル連携"],
+  ["hasEhr","EHR連携"],["hasNurse","NC情報連携"],["hasNcNotify","NC通知連携"],["hasCamera","カメラ"],["hasMobile","モバイル"],
+];
+const CS_PROJECT_TYPE_LABELS = { new:"新規導入", add:"病棟追加", vup:"バージョンアップ" };
+
+const CS_BASIC_COLUMNS = [
+  { label:"病院名", type:"hospital", get:p => getHospitalDisplayParts(p).hospitalName },
+  { label:"支店", get:p => p.branch },
+  { label:"都道府県", get:p => p.prefecture },
+  { label:"案件タイプ", get:p => CS_PROJECT_TYPE_LABELS[p.projectType] || p.projectType },
+  { label:"導入病棟名", type:"multi", get:p => p.ward },
+  { label:"稼働開始日", get:p => p.startDate },
+  { label:"サポートエンド", get:p => p.supportEndDate },
+  { label:"担当営業", get:p => p.salesPerson },
+  { label:"支援担当", get:p => p.csPerson },
+  { label:"導入担当者", get:p => p.solPm },
+  { label:"システム種類", type:"systems" },
+  { label:"導入製品", type:"products" },
+  { label:"病床移動運用", get:p => p.moveOp },
+  { label:"病床番号変更担当", type:"multi", get:p => p.bedNumStaff },
+  { label:"床頭台移動担当", type:"multi", get:p => p.bedMoveStaff },
+  { label:"新規/既存", get:p => p.newOrExisting },
+  { label:"経営主体", get:p => p.keieiShukai },
+  { label:"許可病床数", get:p => p.kyokaBedNum },
+  { label:"病棟構成", get:p => p.byokoKosei },
+  { label:"導入病床数", get:p => p.donyuBedNum },
+  { label:"ベッドサイド端末", get:p => p.bedsideTerminal },
+  { label:"ステーション端末", get:p => p.stationTerminal },
+  { label:"眠りSCAN", get:p => p.nemiriScan },
+  { label:"離床CATCH", get:p => p.rishoCatch },
+  { label:"Wi-Fiベッドナビ", get:p => p.wifiNav },
+  { label:"カメラ", get:p => p.cameraCount },
+  { label:"モバイル", get:p => p.mobileCount },
+  { label:"タブレット設置位置", get:p => p.tabletPos },
+  { label:"電子カルテ", get:p => p.electronicKarte },
+  { label:"ナースコール", get:p => p.nurseCall },
+  { label:"周辺連携機能", get:p => p.shuhenRenkei },
+  { label:"案件概要", get:p => p.ankenGaiyou },
+  { label:"簡易メモ", get:p => getHospitalDisplayParts(p).quickMemo },
+  { label:"備考", type:"long", get:p => p.memo },
+];
+
+function getCsSystemColumns(projects) {
+  const found = new Set();
+  projects.forEach(p => getSystemLabels(p).forEach(s => found.add(s)));
+  return [...CS_SYSTEM_TYPES, ...[...found].filter(s => !CS_SYSTEM_TYPES.includes(s))];
+}
+
+function basicCellHtml(col, p) {
+  if (col.type === "hospital") {
+    const name = col.get(p);
+    return `<a class="cs-list-hospital-link" href="cs-dashboard.html?id=${encodeURIComponent(p.id)}">${escapeHtml(name || "")}</a>`;
+  }
+  if (col.type === "systems") return pillsHtml(getSystemLabels(p));
+  if (col.type === "products") return pillsHtml(getProductLabels(p));
+  if (col.type === "multi") return pillsHtml(splitMultiValue(col.get(p)));
+  const value = String(col.get(p) ?? "").trim();
+  return value ? escapeHtml(value) : `<span class="cs-pill-empty">—</span>`;
+}
+
+function renderCsBasicList(filtered) {
+  const head = document.getElementById("csBasicHead");
+  const body = document.getElementById("csBasicBody");
+  if (!head || !body) return;
+  const rows = filtered.slice().sort((a,b) => (getHospitalDisplayParts(a).hospitalName || "").localeCompare(getHospitalDisplayParts(b).hospitalName || "", "ja"));
+  head.innerHTML = `<tr>${CS_BASIC_COLUMNS.map(col => `<th class="cs-basic-col-${col.type || "text"}">${escapeHtml(col.label)}</th>`).join("")}</tr>`;
+  body.innerHTML = rows.length
+    ? rows.map(p => `<tr>${CS_BASIC_COLUMNS.map(col => `<td class="cs-basic-col-${col.type || "text"}" data-label="${escapeHtml(col.label)}">${basicCellHtml(col, p)}</td>`).join("")}</tr>`).join("")
+    : `<tr><td colspan="${CS_BASIC_COLUMNS.length}" class="cs-list-loading">該当するCS案件がありません</td></tr>`;
+}
+
+function setCsListView(view) {
+  const target = view === "basic" ? "basic" : "activity";
+  document.querySelectorAll("[data-cs-list-view]").forEach(el => {
+    el.hidden = el.dataset.csListView !== target;
+  });
+  document.querySelectorAll(".cs-list-tab").forEach(btn => {
+    const active = btn.dataset.view === target;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.body.dataset.csListView = target;
+  try { localStorage.setItem("csListView", target); } catch (_) {}
+  if (location.hash !== `#${target}`) history.replaceState(null, "", `#${target}`);
+}
+
+function initCsListTabs() {
+  const tabs = document.querySelectorAll(".cs-list-tab");
+  if (!tabs.length) return;
+  tabs.forEach(btn => btn.addEventListener("click", () => setCsListView(btn.dataset.view)));
+  let initial = location.hash.replace("#", "");
+  if (!["basic","activity"].includes(initial)) {
+    try { initial = localStorage.getItem("csListView") || "activity"; } catch (_) { initial = "activity"; }
+  }
+  setCsListView(initial);
+}
+
+async function exportCsBasicXlsx() {
+  try { await loadXlsxLibrary(); }
+  catch (error) { showToast(error.message, "error"); return; }
+  const projects = getFilteredCsListProjects().sort((a,b) => (getHospitalDisplayParts(a).hospitalName || "").localeCompare(getHospitalDisplayParts(b).hospitalName || "", "ja"));
+  const systemColumns = getCsSystemColumns(projects);
+  const header1 = [], header2 = [], merges = [], widths = [];
+  CS_BASIC_COLUMNS.forEach(col => {
+    const start = header1.length;
+    if (col.type === "systems" || col.type === "products") {
+      const subs = col.type === "systems" ? systemColumns : CS_PRODUCT_DEFS.map(([,label]) => label);
+      subs.forEach((sub, i) => { header1.push(i === 0 ? col.label : ""); header2.push(sub); widths.push({ wch: Math.max(6, sub.length * 2 + 2) }); });
+      if (subs.length > 1) merges.push({ s:{ r:0, c:start }, e:{ r:0, c:start + subs.length - 1 } });
+    } else {
+      header1.push(col.label); header2.push("");
+      merges.push({ s:{ r:0, c:start }, e:{ r:1, c:start } });
+      widths.push({ wch: col.type === "hospital" ? 28 : col.type === "long" ? 50 : col.type === "multi" ? 24 : 14 });
+    }
+  });
+  const rows = projects.map(p => {
+    const row = [];
+    CS_BASIC_COLUMNS.forEach(col => {
+      if (col.type === "systems") {
+        const systems = getSystemLabels(p);
+        systemColumns.forEach(s => row.push(systems.includes(s) ? "〇" : ""));
+      } else if (col.type === "products") {
+        CS_PRODUCT_DEFS.forEach(([key]) => row.push(p[key] ? "〇" : ""));
+      } else if (col.type === "multi") {
+        row.push(splitMultiValue(col.get(p)).join("/"));
+      } else {
+        row.push(String(col.get(p) ?? "").trim());
+      }
+    });
+    return row;
+  });
+  const sheet = XLSX.utils.aoa_to_sheet([header1, header2, ...rows]);
+  sheet["!merges"] = merges;
+  sheet["!cols"] = widths;
+  sheet["!autofilter"] = { ref: `A2:${XLSX.utils.encode_col(header2.length - 1)}${Math.max(2, rows.length + 2)}` };
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "基本情報一覧");
+  XLSX.writeFile(book, `パラサイト_基本情報一覧_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${rows.length}件の基本情報を出力しました`);
 }
 
 function renderCsView() {
@@ -542,6 +823,7 @@ function updateCsStats() {
 // =============================================
 function initCs() {
   renderCsBranchTabs();
+  initCsListTabs();
   const branchSelect = document.getElementById("csBranch");
   if (branchSelect) branchSelect.innerHTML = `<option value="">-- 選択 --</option>` + CS_BRANCHES.map(branch => `<option value="${branch}">${branch}</option>`).join("");
   const prefectureInput = document.getElementById("csPrefecture");
@@ -718,6 +1000,7 @@ function openCsAddModal() {
   document.getElementById("csModalTitle").textContent = "CS案件 新規登録";
   document.getElementById("csProjectForm").reset();
   document.getElementById("csEditId").value = "";
+  setupCurrentPhaseInputs(document.getElementById("csCurrentPhase"), document.getElementById("csCurrentTask"), document.getElementById("csCurrentPhaseHint"), null);
   populateCsStaffSelect();
   document.getElementById("csModal").classList.add("open");
 }
@@ -731,6 +1014,7 @@ function openCsEditModal(id) {
   document.getElementById("csBranch").value       = p.branch || "";
   document.getElementById("csHospitalName").value = hospitalDisplay.hospitalName;
   document.getElementById("csQuickMemo").value     = hospitalDisplay.quickMemo;
+  setupCurrentPhaseInputs(document.getElementById("csCurrentPhase"), document.getElementById("csCurrentTask"), document.getElementById("csCurrentPhaseHint"), p);
   document.getElementById("csPrefecture").value   = p.prefecture || "";
   document.getElementById("csWard").value         = p.ward || "";
   document.getElementById("csStartDate").value    = p.startDate || "";
@@ -830,6 +1114,7 @@ async function saveCsProject(e) {
     shuhenRenkei:   document.getElementById("csShuhenRenkei").value.trim(),
     ankenGaiyou:    document.getElementById("csAnkenGaiyou").value.trim(),
   };
+  Object.assign(data, currentPhaseUpdates(document.getElementById("csCurrentPhase"), document.getElementById("csCurrentTask")));
   if (!data.branch) { showToast("支店を選択してください", "error"); return; }
   if (!data.hospitalName) { showToast("病院名を入力してください", "error"); return; }
   try {
@@ -894,7 +1179,7 @@ function openVisitModal(projectId, editIndex = -1) {
     document.getElementById("visitAssignee").value = targetVisit.assignee || "";
     document.getElementById("visitIsVisit").checked = isVisitRecord(targetVisit);
   } else {
-    document.getElementById("visitStatus").value = getProjectActivityPhase(p);
+    document.getElementById("visitStatus").value = getCurrentPhaseInfo(p).phase;
     updateVisitTaskOptions();
     document.getElementById("visitAssignee").value = p.csPerson || "";
   }

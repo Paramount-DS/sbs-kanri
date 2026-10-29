@@ -315,3 +315,72 @@
   .cs-install-info { grid-template-columns:1fr 1fr; }
   .cs-card-actions { grid-template-columns:1fr repeat(3,auto); }
 }
+
+/* =============================================
+   2026-10 改修：現在フェーズ／オンボーディング完了／一覧分割
+   ============================================= */
+[data-cs-list-view][hidden] { display:none !important; }
+
+/* カード：現在フェーズ（フェーズ/活動区分） */
+.cs-card-current-phase { flex-wrap:wrap; row-gap:4px; }
+.cs-card-current-phase strong { white-space:normal; line-height:1.45; word-break:keep-all; overflow-wrap:anywhere; }
+.cs-onboarding-done { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:3px 9px; border:1px solid #efbfd0; border-radius:999px; background:#fff; color:#7d4a60; font-size:11px; font-weight:700; cursor:pointer; user-select:none; }
+.cs-onboarding-done input { width:15px; height:15px; margin:0; accent-color:var(--cs-primary); cursor:pointer; }
+.cs-onboarding-done:has(input:checked) { background:#fff4f8; border-color:var(--cs-primary); color:#9d4c6e; }
+
+/* 編集モーダル：現在フェーズ */
+.cs-current-phase-field { display:grid; gap:6px; padding:10px; border:1px solid #f3d3df; border-radius:8px; background:#fffafd; }
+.cs-current-phase-field select:disabled { background:#f5f5f7; color:#8a8f99; }
+.cs-current-phase-hint { color:#8a6676; font-size:11px; line-height:1.5; }
+
+/* 丸囲みアイコン風（ピル） */
+.cs-pill-list { display:flex; flex-wrap:wrap; gap:4px; }
+.cs-pill { display:inline-flex; align-items:center; border-radius:20px; padding:2px 9px; font-size:11px; font-weight:700; line-height:1.5; background:var(--cs-primary-lt); color:#9d4c6e; border:1px solid var(--cs-pink); white-space:nowrap; }
+.cs-pill-empty { color:#a3a9b4; }
+
+/* 一覧タブ */
+.cs-list-tabs { display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.cs-list-tab { border:1px solid #dca3ba; border-radius:999px; background:#fff; color:#7f3f5b; padding:8px 18px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.cs-list-tab.active { background:var(--cs-primary); border-color:var(--cs-primary); color:#fff; }
+.cs-basic-export { margin-left:auto; }
+body[data-cs-list-view="basic"] #csDateSort { display:none; }
+
+/* 支援活動一覧：メモの見切れ修正・ステータスに活動区分 */
+.cs-status-table { min-width:1080px; }
+.cs-status-table th:nth-child(1), .cs-status-table td:nth-child(1) { width:13%; }
+.cs-status-table th:nth-child(2), .cs-status-table td:nth-child(2) { width:7%; }
+.cs-status-table th:nth-child(3), .cs-status-table td:nth-child(3) { width:7%; }
+.cs-status-table th:nth-child(4), .cs-status-table td:nth-child(4) { width:6%; }
+.cs-status-table th:nth-child(5), .cs-status-table td:nth-child(5) { width:16%; }
+.cs-status-table th:nth-child(6), .cs-status-table td:nth-child(6) { width:9%; }
+.cs-status-table th:nth-child(7), .cs-status-table td:nth-child(7) { width:42%; }
+.cs-status-table td { overflow-wrap:anywhere; }
+.cs-list-memo-preview { max-width:100%; box-sizing:border-box; overflow-wrap:anywhere; }
+.cs-status-table .cs-list-status { white-space:normal; line-height:1.45; border-radius:12px; padding:3px 9px; word-break:keep-all; overflow-wrap:anywhere; }
+
+/* 基本情報一覧 */
+.cs-basic-table { border-collapse:separate; border-spacing:0; font-size:12px; min-width:100%; }
+.cs-basic-table thead th { position:sticky; top:0; z-index:3; background:var(--cs-primary); color:#fff; padding:11px 10px; text-align:left; font-size:12px; font-weight:700; white-space:nowrap; }
+.cs-basic-table td { padding:9px 10px; color:#1e2330; vertical-align:top; border-bottom:1px solid #f0dbe4; background:#fff; min-width:96px; max-width:220px; overflow-wrap:anywhere; }
+.cs-basic-table tbody tr:hover td { background:#fff8fb; }
+.cs-basic-table th:first-child, .cs-basic-table td:first-child { position:sticky; left:0; z-index:2; min-width:180px; box-shadow:1px 0 0 #f0dbe4; }
+.cs-basic-table thead th:first-child { z-index:4; }
+.cs-basic-table td:first-child { font-weight:700; }
+.cs-basic-table td.cs-basic-col-multi, .cs-basic-table td.cs-basic-col-products, .cs-basic-table td.cs-basic-col-systems { min-width:150px; max-width:280px; }
+.cs-basic-table td.cs-basic-col-long { min-width:260px; max-width:360px; white-space:pre-wrap; }
+.cs-basic-wrap { max-height:calc(100vh - 210px); overflow:auto; }
+
+/* 詳細画面：現在フェーズ（クリックで手動変更） */
+.dashboard-summary .dashboard-summary-item.summary-phase { cursor:pointer; transition:background .15s; }
+.dashboard-summary .dashboard-summary-item.summary-phase:hover { background:#fff7fa; }
+.dashboard-summary .dashboard-summary-item.summary-phase strong { font-size:clamp(15px, 1.2vw, 21px); line-height:1.3; }
+.dashboard-phase-done { display:flex; align-items:center; gap:8px; font-weight:700; cursor:pointer; }
+.dashboard-phase-done input { width:18px; height:18px; accent-color:var(--cs-primary); }
+
+@media (max-width: 600px) {
+  .cs-list-page .cs-list-tabs { margin-bottom:8px; }
+  .cs-list-page .cs-list-tab { padding:7px 12px; font-size:12px; }
+  .cs-list-page .cs-basic-export { margin-left:0; }
+  .cs-list-page .cs-basic-wrap { overflow:auto; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.08); max-height:none; }
+  .cs-list-page .cs-basic-table th:first-child, .cs-list-page .cs-basic-table td:first-child { min-width:130px; }
+}

@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css?v=20260916-6"/>
   <link rel="stylesheet" href="auth.css?v=20260916-5"/>
-  <link rel="stylesheet" href="cs.css?v=20260918-3"/>
+  <link rel="stylesheet" href="cs.css?v=20261029-1"/>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -48,7 +48,22 @@
 </div>
 
 <main class="cs-list-content">
-  <div class="cs-table-wrap">
+  <div class="cs-list-tabs" role="tablist" aria-label="一覧の切り替え">
+    <button type="button" class="cs-list-tab" data-view="basic" role="tab">基本情報一覧</button>
+    <button type="button" class="cs-list-tab" data-view="activity" role="tab">支援活動一覧</button>
+    <button type="button" class="btn-cs-export cs-basic-export" data-cs-list-view="basic" onclick="exportCsBasicXlsx()" hidden>基本情報Excel出力</button>
+  </div>
+
+  <div class="cs-table-wrap cs-basic-wrap" data-cs-list-view="basic" hidden>
+    <table class="cs-basic-table">
+      <thead id="csBasicHead"></thead>
+      <tbody id="csBasicBody">
+        <tr><td class="cs-list-loading">読み込み中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cs-table-wrap cs-activity-wrap" data-cs-list-view="activity">
     <table class="cs-status-table">
       <thead>
         <tr>
@@ -71,6 +86,6 @@
 <div id="toast" class="toast"></div>
 <script src="firebase-config.js"></script>
 <script src="auth.js?v=20260917-2"></script>
-<script src="cs.js?v=20260918-3"></script>
+<script src="cs.js?v=20261029-1"></script>
 </body>
 </html>
