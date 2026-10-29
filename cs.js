@@ -35,15 +35,15 @@ const CS_PHASES = [
 
 let allCsProjects = [];
 let csSearchQuery = "";
-let csFilterPerson = "";
-let csFilterStatus = "";
+let csFilterPerson = null;   // null = すべて / Set = チェックされた値
+let csFilterStatus = null;
 const CS_BRANCHES = ["札幌","仙台","埼玉","東京","横浜","名古屋","大阪","広島","福岡"];
 const CS_SYSTEM_TYPES = ["SBS","LiteA","LiteB","LiteC","LiteD","Connectハイブリッド","Connectオンプレ","眠りSCAN Viewer"];
 const CS_PREFECTURES = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
 let csFilterBranch = "";
 let csDateSort = "desc";
 let csFilterPrefecture = "";
-let csFilterSales = "";
+let csFilterSales = null;
 let pendingCsDeleteId = null;
 let supportEndMigrationRunning = false;
 let legacyCsMigrationRunning = false;
@@ -526,11 +526,11 @@ function renderCsProjects() {
   let filtered = allCsProjects.filter(p => {
     const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
     const matchName   = searchable.includes(csSearchQuery.toLowerCase());
-    const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchStatus = !csFilterStatus || getCurrentPhaseInfo(p).phase === csFilterStatus;
+    const matchPerson = !csFilterPerson || csFilterPerson.has(String(p.csPerson || "").trim());
+    const matchStatus = !csFilterStatus || csFilterStatus.has(getCurrentPhaseFilterKey(p));
     const matchBranch = !csFilterBranch || p.branch === csFilterBranch;
     const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
-    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
+    const matchSales = !csFilterSales || csFilterSales.has(String(p.salesPerson || "").trim());
     return matchName && matchPerson && matchStatus && matchBranch && matchPrefecture && matchSales;
   });
 
@@ -567,10 +567,10 @@ function getFilteredCsListProjects() {
   return allCsProjects.filter(p => {
     const searchable = [p.hospitalName,p.prefecture,p.salesPerson].join(" ").toLowerCase();
     const matchName = searchable.includes(q);
-    const matchPerson = !csFilterPerson || p.csPerson === csFilterPerson;
-    const matchStatus = !csFilterStatus || getCurrentPhaseInfo(p).phase === csFilterStatus;
+    const matchPerson = !csFilterPerson || csFilterPerson.has(String(p.csPerson || "").trim());
+    const matchStatus = !csFilterStatus || csFilterStatus.has(getCurrentPhaseFilterKey(p));
     const matchPrefecture = !csFilterPrefecture || p.prefecture === csFilterPrefecture;
-    const matchSales = !csFilterSales || p.salesPerson === csFilterSales;
+    const matchSales = !csFilterSales || csFilterSales.has(String(p.salesPerson || "").trim());
     return matchName && matchPerson && matchStatus && matchPrefecture && matchSales;
   });
 }
@@ -841,24 +841,16 @@ function initCs() {
     });
   }
 
-  // 担当者フィルタ
-  const staffSel = document.getElementById("csStaffFilter");
-  if (staffSel) {
-    updateCsStaffFilter();
-    staffSel.addEventListener("change", e => {
-      csFilterPerson = e.target.value;
-      renderCsView();
-    });
-  }
-
-  const statusSel = document.getElementById("csStatusFilter");
-  if (statusSel) {
-    statusSel.innerHTML = `<option value="">全CSステータス</option>` + CS_PHASES.map(phase => `<option value="${escapeHtml(phase.key)}">${escapeHtml(getVisitStatusLabel(phase.key))}</option>`).join("");
-    statusSel.addEventListener("change", e => {
-      csFilterStatus = e.target.value;
-      renderCsView();
-    });
-  }
+  // 支援担当・担当営業・CSステータス（Excelフィルタ風のチェック式）
+  updateCsStaffFilter();
+  updateCsSalesFilter();
+  updateCsStatusFilter();
+  document.addEventListener("click", e => {
+    document.querySelectorAll(".cs-check-filter.open").forEach(el => { if (!el.contains(e.target)) el.classList.remove("open"); });
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") document.querySelectorAll(".cs-check-filter.open").forEach(el => el.classList.remove("open"));
+  });
   const dateSort = document.getElementById("csDateSort");
   if (dateSort) dateSort.addEventListener("change", e => {
     csDateSort = e.target.value;
@@ -869,8 +861,6 @@ function initCs() {
     prefectureFilter.innerHTML=`<option value="">全都道府県</option>`+CS_PREFECTURES.map(value=>`<option value="${value}">${value}</option>`).join("");
     prefectureFilter.addEventListener("change",e=>{csFilterPrefecture=e.target.value;renderCsView();});
   }
-  const salesFilter=document.getElementById("csSalesFilter");
-  if(salesFilter)salesFilter.addEventListener("change",e=>{csFilterSales=e.target.value;renderCsView();});
   // 登録フォームの担当者プルダウン
   if (document.getElementById("csSalesPerson")) populateCsStaffSelect();
 
@@ -907,6 +897,7 @@ function initCs() {
       allCsProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateCsStaffFilter();
       updateCsSalesFilter();
+      updateCsStatusFilter();
       populateCsStaffSelect();
       renderCsBranchTabs();
       renderCsView();
@@ -918,13 +909,124 @@ function initCs() {
     });
 }
 
+// =============================================
+// Excelフィルタ風チェックボックスフィルタ
+//   groups: [{ label, items:[{ value, label }] }]（label なしのグループは見出しなし）
+// =============================================
+const CS_EMPTY_LABEL = "（空白）";
+
+function renderCheckFilter(id, title, groups, getSelected, setSelected) {
+  const root = document.getElementById(id);
+  if (!root) return;
+  const allValues = groups.flatMap(g => g.items.map(i => i.value));
+  let selected = getSelected();
+  // 存在しなくなった値は除外。全選択と同じになったら「すべて」に戻す
+  if (selected) {
+    selected = new Set([...selected].filter(v => allValues.includes(v)));
+    if (selected.size === allValues.length) selected = null;
+    setSelected(selected);
+  }
+  const isChecked = v => !selected || selected.has(v);
+  const wasOpen = root.classList.contains("open");
+  const searchText = root.querySelector(".cs-check-filter-search")?.value || "";
+  const checkedCount = allValues.filter(isChecked).length;
+  const summary = !selected ? "すべて"
+    : checkedCount === 0 ? "なし"
+    : checkedCount === 1 ? (() => { const i = groups.flatMap(g => g.items).find(x => isChecked(x.value)); return i?.fullLabel || i?.label || "1件"; })()
+    : `${checkedCount}件選択`;
+  const groupState = g => {
+    const n = g.items.filter(i => isChecked(i.value)).length;
+    return n === g.items.length ? "checked" : n ? "mixed" : "";
+  };
+  root.classList.add("cs-check-filter");
+  root.classList.toggle("is-filtered", !!selected);
+  root.innerHTML = `
+    <button type="button" class="cs-check-filter-btn" aria-haspopup="true"><span class="cs-check-filter-title">${escapeHtml(title)}</span><span class="cs-check-filter-summary">${escapeHtml(summary)}</span><b>▾</b></button>
+    <div class="cs-check-filter-panel" role="dialog" aria-label="${escapeHtml(title)}で絞り込み">
+      <input type="search" class="cs-check-filter-search" placeholder="検索" value="${escapeHtml(searchText)}"/>
+      <label class="cs-check-filter-all"><input type="checkbox" data-role="all"${checkedCount === allValues.length ? " checked" : ""}${checkedCount && checkedCount < allValues.length ? ' data-mixed="1"' : ""}/> (すべて選択)</label>
+      <div class="cs-check-filter-list">
+        ${groups.map((g, gi) => `
+          ${g.label ? `<label class="cs-check-filter-group"><input type="checkbox" data-role="group" data-group="${gi}"${groupState(g) === "checked" ? " checked" : ""}${groupState(g) === "mixed" ? ' data-mixed="1"' : ""}/> ${escapeHtml(g.label)}</label>` : ""}
+          ${g.items.map(i => `<label class="cs-check-filter-item${g.label ? " is-child" : ""}" data-search="${escapeHtml((i.fullLabel || i.label).toLowerCase())}"><input type="checkbox" data-role="item" data-value="${escapeHtml(i.value)}"${isChecked(i.value) ? " checked" : ""}/> ${escapeHtml(i.label)}</label>`).join("")}
+        `).join("")}
+      </div>
+      <div class="cs-check-filter-foot"><button type="button" data-role="clear">フィルタ解除</button><button type="button" data-role="close">閉じる</button></div>
+    </div>`;
+  root.querySelectorAll('input[data-mixed="1"]').forEach(el => { el.indeterminate = true; });
+  if (wasOpen) root.classList.add("open");
+
+  const commit = next => {
+    setSelected(next && next.size === allValues.length ? null : next);
+    renderCheckFilter(id, title, groups, getSelected, setSelected);
+    renderCsView();
+  };
+  const current = () => new Set(allValues.filter(isChecked));
+  root.querySelector(".cs-check-filter-btn").addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".cs-check-filter.open").forEach(el => { if (el !== root) el.classList.remove("open"); });
+    root.classList.toggle("open");
+    if (root.classList.contains("open")) root.querySelector(".cs-check-filter-search")?.focus();
+  });
+  const search = root.querySelector(".cs-check-filter-search");
+  const applySearch = () => {
+    const q = search.value.trim().toLowerCase();
+    root.querySelectorAll(".cs-check-filter-item").forEach(el => { el.hidden = !!q && !el.dataset.search.includes(q); });
+    root.querySelectorAll(".cs-check-filter-group").forEach(el => { el.hidden = !!q; });
+  };
+  search.addEventListener("input", applySearch);
+  applySearch();
+  root.querySelector('[data-role="all"]').addEventListener("change", e => commit(e.target.checked ? null : new Set()));
+  root.querySelectorAll('[data-role="group"]').forEach(el => el.addEventListener("change", e => {
+    const next = current();
+    groups[Number(el.dataset.group)].items.forEach(i => e.target.checked ? next.add(i.value) : next.delete(i.value));
+    commit(next);
+  }));
+  root.querySelectorAll('[data-role="item"]').forEach(el => el.addEventListener("change", e => {
+    const next = current();
+    e.target.checked ? next.add(el.dataset.value) : next.delete(el.dataset.value);
+    commit(next);
+  }));
+  root.querySelector('[data-role="clear"]').addEventListener("click", () => { search.value = ""; commit(null); });
+  root.querySelector('[data-role="close"]').addEventListener("click", () => root.classList.remove("open"));
+}
+
+function personFilterGroups(field) {
+  const values = [...new Set(allCsProjects.map(p => String(p[field] || "").trim()))];
+  const named = values.filter(Boolean).sort((a, b) => a.localeCompare(b, "ja"));
+  const items = named.map(v => ({ value: v, label: v }));
+  if (values.includes("")) items.push({ value: "", label: CS_EMPTY_LABEL });
+  return [{ label: "", items }];
+}
+
 function updateCsSalesFilter() {
-  const select=document.getElementById("csSalesFilter");
-  if(!select)return;
-  const current=select.value;
-  const values=[...new Set(allCsProjects.map(p=>String(p.salesPerson||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
-  select.innerHTML=`<option value="">全担当営業</option>`+values.map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
-  if(current&&values.includes(current))select.value=current;else csFilterSales="";
+  renderCheckFilter("csSalesFilter", "担当営業", personFilterGroups("salesPerson"), () => csFilterSales, v => { csFilterSales = v; });
+}
+
+// CSステータス：フェーズ＋活動区分のすべての組み合わせ
+function getCurrentPhaseFilterKey(p) {
+  const info = getCurrentPhaseInfo(p);
+  return `${info.phase}|${info.taskItem || ""}`;
+}
+
+function statusFilterGroups() {
+  const extras = {};
+  allCsProjects.forEach(p => {
+    const info = getCurrentPhaseInfo(p);
+    const known = getCsPhase(info.phase).items.some(row => row.item === info.taskItem);
+    if (info.taskItem && !known) (extras[info.phase] = extras[info.phase] || new Set()).add(info.taskItem);
+  });
+  return CS_PHASES.map(phase => ({
+    label: getVisitStatusLabel(phase.key),
+    items: [
+      ...[...phase.items.map(row => row.item), ...(extras[phase.key] || [])].map(item => ({ value: `${phase.key}|${item}`, label: item, fullLabel: `${getVisitStatusLabel(phase.key)}/${item}` })),
+      { value: `${phase.key}|`, label: "（活動区分なし）", fullLabel: `${getVisitStatusLabel(phase.key)}（活動区分なし）` },
+    ],
+  }));
+}
+
+function updateCsStatusFilter() {
+  renderCheckFilter("csStatusFilter", "CSステータス", statusFilterGroups(), () => csFilterStatus, v => { csFilterStatus = v; });
 }
 
 async function migrateExistingSupportEndDates(docs) {
@@ -972,14 +1074,7 @@ function populateCsStaffSelect() {
 }
 
 function updateCsStaffFilter() {
-  const sel = document.getElementById("csStaffFilter");
-  if (!sel) return;
-  const current = sel.value;
-  const staff = getCsStaffCandidates();
-  sel.innerHTML = `<option value="">全員表示</option>` +
-    staff.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
-  if (current && staff.includes(current)) sel.value = current;
-  else csFilterPerson = "";
+  renderCheckFilter("csStaffFilter", "支援担当", personFilterGroups("csPerson"), () => csFilterPerson, v => { csFilterPerson = v; });
 }
 
 function getCsStaffCandidates(targetId = "csPerson") {
