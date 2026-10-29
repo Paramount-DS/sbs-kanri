@@ -60,6 +60,66 @@ function escapeHtml(s) {
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
+// =============================================
+// 外部リンク（URL）の検出・除去
+//   訪問内容に Slack 等のリンクだけ貼って報告済みにするのを防ぐ。
+//   http(s)://、slack:// 等のスキーム付き、www.〜、主要ドメイン（〜.slack.com 等）を対象
+// =============================================
+const URL_CHARS = "[A-Za-z0-9\\-._~:/?#\\[\\]@!$&'()*+,;=%|]";
+const EXTERNAL_LINK_PATTERN = new RegExp(
+  "<[A-Za-z][A-Za-z0-9+.\\-]*:\\/\\/[^<>\\n]*>" +                                    // Slack形式 <url|表示名>
+  "|<?(?:" +
+    "(?:[A-Za-z][A-Za-z0-9+.\\-]*):\\/\\/" + URL_CHARS + "+" +                       // scheme://...
+    "|www\\." + URL_CHARS + "+" +                                                  // www....
+    "|(?<![@A-Za-z0-9.\\-])(?:[A-Za-z0-9-]+\\.)+(?:com|net|org|jp|io|co|app|dev|me|info|biz|ly|gl|link|page|site|ai|us|tv)(?:[/?#]" + URL_CHARS + "*)?(?![A-Za-z0-9])" + // example.com/...
+  ")>?",
+  "gi"
+);
+
+function containsExternalLink(text) {
+  EXTERNAL_LINK_PATTERN.lastIndex = 0;
+  const found = EXTERNAL_LINK_PATTERN.test(String(text || ""));
+  EXTERNAL_LINK_PATTERN.lastIndex = 0;
+  return found;
+}
+
+function stripExternalLinks(text) {
+  const original = String(text || "");
+  if (!containsExternalLink(original)) return original;
+  return original
+    .replace(EXTERNAL_LINK_PATTERN, "")
+    .replace(/[（(「【\[<]\s*[）)」】\]>]/g, "")   // 空になった括弧
+    .replace(/[ \t　]{2,}/g, " ")
+    .split("\n").map(line => line.trim()).join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function visitFreeText(visit) {
+  return stripExternalLinks(visit?.freeText || "");
+}
+
+const EXTERNAL_LINK_MESSAGE = "訪問内容に外部リンク（URL）は入力できません。リンクではなく内容を文章で記入してください。";
+
+// テキストエリアにリアルタイムの警告を付ける
+function attachExternalLinkGuard(textarea) {
+  if (!textarea || textarea.dataset.linkGuard) return;
+  textarea.dataset.linkGuard = "1";
+  const note = document.createElement("div");
+  note.className = "cs-link-guard-note";
+  note.textContent = EXTERNAL_LINK_MESSAGE;
+  note.hidden = true;
+  textarea.insertAdjacentElement("afterend", note);
+  const check = () => {
+    const bad = containsExternalLink(textarea.value);
+    textarea.classList.toggle("has-external-link", bad);
+    note.hidden = !bad;
+  };
+  textarea.addEventListener("input", check);
+  textarea.addEventListener("paste", () => setTimeout(check));
+  check();
+}
+
 function normalizeHospitalName(name) {
   return String(name || "").replace(/\s+/g, "").toLowerCase();
 }
@@ -199,7 +259,7 @@ function getLatestVisitDateValue(p) {
 
 function getLatestVisitMemo(p) {
   const latest = getLatestVisit(p);
-  return latest?.freeText || "";
+  return visitFreeText(latest);
 }
 
 function getCsPhase(key) {
@@ -383,7 +443,10 @@ function migrateLegacyVisit(visit) {
 function legacyCsUpdates(project) {
   const updates = {};
   if (Array.isArray(project.visits)) {
-    const visits = project.visits.map(migrateLegacyVisit);
+    const visits = project.visits.map(migrateLegacyVisit).map(visit => {
+      if (!containsExternalLink(visit.freeText)) return visit;
+      return { ...visit, freeText: stripExternalLinks(visit.freeText) };
+    });
     if (visits.some((visit,index) => visit !== project.visits[index])) updates.visits = visits;
   }
   const mappedProjectItem = LEGACY_CS_ACTIVITY_TARGETS[project.csTaskItem];
@@ -422,7 +485,7 @@ async function migrateLegacyCsRecords(docs) {
   legacyCsMigrationRunning = true;
   try {
     for (const doc of targets) await migrateLegacyCsProject(doc.ref);
-    showToast(`${targets.length}件の旧活動区分を現行区分へ更新しました`);
+    showToast(`${targets.length}件の訪問履歴を更新しました（旧活動区分の移行・外部リンクの削除）`);
   } catch (error) {
     console.error("旧活動区分の移行に失敗しました:", error);
     showToast("旧活動区分の更新に失敗しました", "error");
@@ -468,7 +531,7 @@ function createCsCard(p) {
         </div>
         ${v.taskItem ? `<div class="cs-visit-task"><strong>${escapeHtml(normalizeCsActivityItem(v.taskItem))}</strong></div>` : ""}
         ${v.assignee ? `<div class="cs-visit-assignee">対応者：${escapeHtml(v.assignee)}</div>` : ""}
-        ${v.freeText ? `<div class="cs-visit-text">${escapeHtml(v.freeText)}</div>` : ""}
+        ${visitFreeText(v) ? `<div class="cs-visit-text">${escapeHtml(visitFreeText(v))}</div>` : ""}
       </div>`;
   }).join("");
 
@@ -800,7 +863,7 @@ async function exportCsActivitiesXlsx() {
     if ((from || to) && !visits.length) return;
     const latest = visits.slice().sort((a,b) => String(b.endDate || b.startDate || b.createdAt || "").localeCompare(String(a.endDate || a.startDate || a.createdAt || "")))[0] || {};
     const date = latest.endDate || latest.startDate || "";
-    rows.push([normalizeCsActivityItem(latest.taskItem) || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", latest.freeText || "", date, visits.length]);
+    rows.push([normalizeCsActivityItem(latest.taskItem) || "", getHospitalDisplayParts(p).hospitalName, date, latest.assignee || p.csPerson || "", visitFreeText(latest), date, visits.length]);
   });
   const sheet = XLSX.utils.aoa_to_sheet(rows);
   sheet["!cols"] = [{wch:22},{wch:28},{wch:14},{wch:16},{wch:50},{wch:14},{wch:12}];
@@ -1278,6 +1341,9 @@ function openVisitModal(projectId, editIndex = -1) {
     updateVisitTaskOptions();
     document.getElementById("visitAssignee").value = p.csPerson || "";
   }
+  const freeTextInput = document.getElementById("visitFreeText");
+  attachExternalLinkGuard(freeTextInput);
+  freeTextInput.dispatchEvent(new Event("input"));
   document.getElementById("visitModal").classList.add("open");
 }
 
@@ -1307,6 +1373,12 @@ async function saveVisit(e) {
     endDate:   document.getElementById("visitEndDate").value,
     freeText:  document.getElementById("visitFreeText").value.trim(),
   };
+  if (containsExternalLink(visit.freeText)) {
+    showToast(EXTERNAL_LINK_MESSAGE, "error");
+    attachExternalLinkGuard(document.getElementById("visitFreeText"));
+    document.getElementById("visitFreeText").focus();
+    return;
+  }
   const selectedPhase = getCsPhase(normalizeVisitStatus(visit.status));
   const selectedTask = selectedPhase.items.find(item => item.item === visit.taskItem);
   visit.taskContent = selectedTask?.content || "";

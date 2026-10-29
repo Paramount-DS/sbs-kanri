@@ -415,3 +415,8 @@ body[data-cs-list-mode="basic"] #csDateSort { display:none; }
   .cs-check-filter-title { font-size:9px; }
   .cs-check-filter-panel { position:fixed; left:10px; right:10px; top:auto; width:auto; max-width:none; }
 }
+
+/* 訪問内容：外部リンク入力ガード */
+textarea.has-external-link { border-color:#e54d55 !important; background:#fff5f5; }
+.cs-link-guard-note { margin-top:5px; padding:6px 9px; border-radius:6px; background:#fdecec; color:#b3261e; font-size:11px; font-weight:700; line-height:1.5; }
+.cs-link-guard-note[hidden] { display:none; }
