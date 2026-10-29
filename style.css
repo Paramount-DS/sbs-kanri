@@ -1175,3 +1175,21 @@ body {
   .project-type-tabs { padding: 0 10px; }
   .project-type-tab { padding: 10px 12px; font-size: 12px; }
 }
+
+/* =============================================
+   外部リンク（URL）ブロック - url-guard
+   ============================================= */
+.url-guard-note {
+  color: #c0392b;
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: #fff0ee;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  line-height: 1.5;
+}
+.has-external-link {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 2px rgba(231,76,60,.15) !important;
+}

@@ -483,6 +483,18 @@ async function saveProject(e) {
     memo:            document.getElementById("formMemo").value.trim(),
   };
   if (!data.hospitalName) { showToast("病院名を入力してください","error"); return; }
+
+  // URLブロックチェック
+  const urlCheckFields = [
+    "formMemo","formAnkenGaiyou","formScheduleStatus","formShuhenRenkei",
+    "formByokoKosei","formDonyuByoko","formKeieiShukai",
+    "formElectronicKarte","formNurseCall","formTabletPos",
+  ];
+  if (hasUrlGuardError(urlCheckFields)) {
+    showToast("外部リンク（URL）が含まれています。削除してから保存してください", "error");
+    return;
+  }
+
   try {
     const col = BRANCHES[currentBranch].collection;
     if (id) { await db.collection(col).doc(id).update(data); showToast("案件を更新しました"); }
@@ -709,4 +721,11 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   switchBranch(currentBranch);
   updateTaskBar();
+
+  // URLガード：フォームのtextareaとinputに適用
+  ["formMemo","formAnkenGaiyou","formScheduleStatus","formShuhenRenkei",
+   "formByokoKosei","formDonyuByoko","formElectronicKarte","formNurseCall"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) attachUrlGuard(el);
+  });
 });
